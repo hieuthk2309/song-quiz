@@ -200,6 +200,7 @@ export function App() {
   };
 
   const handleStartQuiz = (category: string) => {
+    soundEngine.resumeAudioContext();
     setActiveCategory(category);
     setCurrentView('game');
   };

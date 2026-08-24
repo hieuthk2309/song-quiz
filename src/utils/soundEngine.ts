@@ -1,5 +1,10 @@
 // Web Audio API Synthesizer & Sound Effects for Vpop Quiz
 
+export interface MelodyNote {
+  freq: number;
+  duration: number;
+}
+
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
@@ -7,17 +12,28 @@ class SoundEngine {
   private currentMelodyTimer: number | null = null;
   private currentOscillators: OscillatorNode[] = [];
 
-  private init() {
+  public init() {
+    if (typeof window === 'undefined') return;
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioCtx();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
-      this.masterGain.connect(this.ctx.destination);
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+      }
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
     }
+  }
+
+  public resumeAudioContext() {
+    this.init();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      return this.ctx.resume().catch(() => {});
+    }
+    return Promise.resolve();
   }
 
   public setMuted(muted: boolean) {
@@ -45,9 +61,9 @@ class SoundEngine {
 
   // Play button click sound
   public playClick() {
+    this.init();
     if (this.isMuted) return;
     try {
-      this.init();
       if (!this.ctx || !this.masterGain) return;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -71,9 +87,9 @@ class SoundEngine {
 
   // Play correct answer chime
   public playCorrect() {
+    this.init();
     if (this.isMuted) return;
     try {
-      this.init();
       if (!this.ctx || !this.masterGain) return;
       const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
       notes.forEach((freq, idx) => {
@@ -100,9 +116,9 @@ class SoundEngine {
 
   // Play wrong answer buzzer
   public playWrong() {
+    this.init();
     if (this.isMuted) return;
     try {
-      this.init();
       if (!this.ctx || !this.masterGain) return;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -126,9 +142,9 @@ class SoundEngine {
 
   // Play timer warning tick
   public playTick() {
+    this.init();
     if (this.isMuted) return;
     try {
-      this.init();
       if (!this.ctx || !this.masterGain) return;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -149,39 +165,87 @@ class SoundEngine {
     }
   }
 
-  // Play catchy melody sequence for the song trivia
-  public playMelody(notes: Array<{ freq: number; duration: number }>, onComplete?: () => void) {
+  /**
+   * Generates a unique, harmonious pentatonic melody sequence for any song based on its title and artist.
+   */
+  public generateMelodyForTrack(songTitle: string = '', artist: string = ''): MelodyNote[] {
+    const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00]; // C Major Pentatonic (2 Octaves)
+    const seedStr = `${songTitle}-${artist}`;
+    let hash = 0;
+    for (let i = 0; i < seedStr.length; i++) {
+      hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+      hash |= 0;
+    }
+
+    const noteCount = 6;
+    const notes: MelodyNote[] = [];
+    let cur = Math.abs(hash);
+
+    for (let i = 0; i < noteCount; i++) {
+      const noteIdx = (cur + i * 3) % scale.length;
+      const freq = scale[noteIdx];
+      const duration = i === noteCount - 1 ? 0.6 : (i % 2 === 0 ? 0.35 : 0.28);
+      notes.push({ freq, duration });
+      cur = Math.floor(cur / 3) + 7;
+    }
+
+    return notes;
+  }
+
+  /**
+   * Play rich harmonic melody sequence for song preview (Lead Synth + Warm Octave Resonance)
+   */
+  public playMelody(notes: MelodyNote[], onComplete?: () => void) {
     this.stopCurrentAudio();
+    this.init();
     if (this.isMuted || !notes || notes.length === 0) return;
 
     try {
-      this.init();
       if (!this.ctx || !this.masterGain) return;
 
       let accumulatedTime = 0;
       const now = this.ctx.currentTime + 0.05;
 
       notes.forEach((note) => {
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
         const noteStart = now + accumulatedTime;
         const noteDur = note.duration;
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(note.freq, noteStart);
+        // 1. Lead Melody Oscillator (Warm Triangle)
+        const leadOsc = this.ctx!.createOscillator();
+        const leadGain = this.ctx!.createGain();
 
-        // Gentle envelope for melodic synth
-        gain.gain.setValueAtTime(0.001, noteStart);
-        gain.gain.linearRampToValueAtTime(0.25, noteStart + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDur);
+        leadOsc.type = 'triangle';
+        leadOsc.frequency.setValueAtTime(note.freq, noteStart);
 
-        osc.connect(gain);
-        gain.connect(this.masterGain!);
+        leadGain.gain.setValueAtTime(0.001, noteStart);
+        leadGain.gain.linearRampToValueAtTime(0.35, noteStart + 0.03);
+        leadGain.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDur);
 
-        osc.start(noteStart);
-        osc.stop(noteStart + noteDur);
+        leadOsc.connect(leadGain);
+        leadGain.connect(this.masterGain!);
 
-        this.currentOscillators.push(osc);
+        leadOsc.start(noteStart);
+        leadOsc.stop(noteStart + noteDur);
+        this.currentOscillators.push(leadOsc);
+
+        // 2. Harmonic Sub/Over Oscillator (Sine Wave for musical depth)
+        const harmOsc = this.ctx!.createOscillator();
+        const harmGain = this.ctx!.createGain();
+
+        harmOsc.type = 'sine';
+        harmOsc.frequency.setValueAtTime(note.freq * 0.5, noteStart); // Octave below for body
+
+        harmGain.gain.setValueAtTime(0.001, noteStart);
+        harmGain.gain.linearRampToValueAtTime(0.18, noteStart + 0.04);
+        harmGain.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDur);
+
+        harmOsc.connect(harmGain);
+        harmGain.connect(this.masterGain!);
+
+        harmOsc.start(noteStart);
+        harmOsc.stop(noteStart + noteDur);
+        this.currentOscillators.push(harmOsc);
+
         accumulatedTime += noteDur;
       });
 
@@ -197,6 +261,7 @@ class SoundEngine {
 
   // Fanfare victory jingle
   public playVictory() {
+    this.init();
     if (this.isMuted) return;
     const fanfare = [
       { freq: 523.25, duration: 0.15 }, // C5

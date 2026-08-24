@@ -386,31 +386,39 @@ export interface QuizOptionItem {
   isCorrect: boolean;
 }
 
+export type QuestionType = 'ARTIST_NAME' | 'SONG_NAME' | 'artist' | 'song' | 'song_name' | 'who_is_the_artist' | 'what_is_the_song_name';
+
 /**
  * Generates 4 quiz options (1 correct, 3 wrong distractors) mixed and shuffled.
  *
  * @param correctTrack - The target Spotify track for the question
- * @param questionType - Type of question: 'artist' | 'release_year' (or 'year') | 'song_name' (or 'song')
+ * @param questionType - 'ARTIST_NAME' ("Who is the artist?") | 'SONG_NAME' ("What is the song name?")
  * @param tracksPool - The cached pool of tracks (e.g. 50 tracks) to extract distractors without additional API calls
  */
 export function generateQuizOptions(
   correctTrack: any,
-  questionType: 'artist' | 'year' | 'release_year' | 'song' | 'song_name',
+  questionType: QuestionType | string,
   tracksPool: any[] = []
 ): QuizOptionItem[] {
-  const normalizedType = (questionType || '').toLowerCase();
+  const normalizedType = (questionType || '').toUpperCase().trim();
 
   // ───────────────────────────────────────────────────────────────────────────
-  // TYPE 1: ARTIST NAME
+  // QUESTION TYPE: ARTIST_NAME ("Who is the artist?")
   // ───────────────────────────────────────────────────────────────────────────
-  if (normalizedType === 'artist' || normalizedType === 'who_is_the_artist') {
+  if (
+    normalizedType === 'ARTIST_NAME' ||
+    normalizedType === 'ARTIST' ||
+    normalizedType === 'WHO_IS_THE_ARTIST'
+  ) {
     const correctArtist = correctTrack.artists?.[0]?.name?.trim() || 'Unknown Artist';
-    const correctArtistNamesLower = new Set(
+
+    // Exclude all artists on the correct track (primary + featured)
+    const excludedArtistsLower = new Set(
       (correctTrack.artists || []).map((a: any) => (a.name || '').trim().toLowerCase())
     );
 
     const wrongArtistsPool: string[] = [];
-    const seenWrongArtists = new Set<string>();
+    const seenArtists = new Set<string>();
 
     for (const track of tracksPool) {
       if (!track?.artists) continue;
@@ -419,98 +427,68 @@ export function generateQuizOptions(
         if (!name) continue;
         const nameLower = name.toLowerCase();
 
-        // Must NOT be in correctTrack.artists (avoiding featured artists as wrong options)
-        if (!correctArtistNamesLower.has(nameLower) && !seenWrongArtists.has(nameLower)) {
-          seenWrongArtists.add(nameLower);
+        // Validate that this artist does not exist in correctTrack.artists
+        if (!excludedArtistsLower.has(nameLower) && !seenArtists.has(nameLower)) {
+          seenArtists.add(nameLower);
           wrongArtistsPool.push(name);
         }
       }
     }
 
     const shuffledPool = shuffleArray(wrongArtistsPool);
-    const wrongDistractors: string[] = shuffledPool.slice(0, 3);
+    const randomWrongArtists = shuffledPool.slice(0, 3);
 
+    // Fallback pool in case tracksPool is small or homogeneous
     const fallbackArtists = [
       'Sơn Tùng M-TP', 'Đen Vâu', 'Vũ.', 'Hoàng Thùy Linh', 'AMEE',
       'Tăng Duy Tân', 'MONO', 'Wren Evans', 'Phan Mạnh Quỳnh', 'Erik',
       'HIEUTHUHAI', 'Mỹ Tâm', 'Noo Phước Thịnh', 'Bích Phương', 'Soobin'
     ];
     for (const fallback of fallbackArtists) {
-      if (wrongDistractors.length >= 3) break;
+      if (randomWrongArtists.length >= 3) break;
       const lower = fallback.toLowerCase();
-      if (!correctArtistNamesLower.has(lower) && !wrongDistractors.some(d => d.toLowerCase() === lower)) {
-        wrongDistractors.push(fallback);
+      if (!excludedArtistsLower.has(lower) && !randomWrongArtists.some(d => d.toLowerCase() === lower)) {
+        randomWrongArtists.push(fallback);
       }
     }
 
     const options: QuizOptionItem[] = [
       { label: correctArtist, isCorrect: true },
-      ...wrongDistractors.slice(0, 3).map(artistName => ({ label: artistName, isCorrect: false })),
+      ...randomWrongArtists.slice(0, 3).map(artistName => ({ label: artistName, isCorrect: false })),
     ];
 
     return shuffleArray(options);
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // TYPE 2: RELEASE YEAR (Calculated Mathematically)
+  // QUESTION TYPE: SONG_NAME ("What is the song name?")
   // ───────────────────────────────────────────────────────────────────────────
-  if (normalizedType === 'year' || normalizedType === 'release_year' || normalizedType === 'what_is_the_release_year') {
-    const rawDate = correctTrack.album?.release_date || '';
-    const parsedYear = parseInt(rawDate.substring(0, 4), 10);
-    const correctYear = !isNaN(parsedYear) && parsedYear > 1900 ? parsedYear : 2023;
-    const currentMaxYear = 2026;
-
-    // Mathematical range: [correctYear - 3, correctYear + 3], excluding correctYear, <= 2026
-    const candidateYears: number[] = [];
-    for (let offset = -3; offset <= 3; offset++) {
-      if (offset === 0) continue;
-      const candidate = correctYear + offset;
-      if (candidate >= 1950 && candidate <= currentMaxYear) {
-        candidateYears.push(candidate);
-      }
-    }
-
-    let extraOffset = -4;
-    while (candidateYears.length < 3 && correctYear + extraOffset >= 1950) {
-      candidateYears.push(correctYear + extraOffset);
-      extraOffset--;
-    }
-
-    const shuffledYears = shuffleArray(candidateYears);
-    const wrongYears = shuffledYears.slice(0, 3);
-
-    const options: QuizOptionItem[] = [
-      { label: correctYear.toString(), isCorrect: true },
-      ...wrongYears.map(year => ({ label: year.toString(), isCorrect: false })),
-    ];
-
-    return shuffleArray(options);
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // TYPE 3: SONG NAME (Cleaned Strings)
-  // ───────────────────────────────────────────────────────────────────────────
-  if (normalizedType === 'song' || normalizedType === 'song_name' || normalizedType === 'what_is_the_song_name') {
+  if (
+    normalizedType === 'SONG_NAME' ||
+    normalizedType === 'SONG' ||
+    normalizedType === 'WHAT_IS_THE_SONG_NAME' ||
+    normalizedType === 'MELODY'
+  ) {
     const rawCorrectName = correctTrack.name || 'Unknown Track';
-    const cleanCorrect = cleanTrackName(rawCorrectName) || rawCorrectName;
-    const cleanCorrectLower = cleanCorrect.toLowerCase();
+    const cleanCorrectTitle = cleanTrackName(rawCorrectName) || rawCorrectName;
+    const cleanCorrectLower = cleanCorrectTitle.toLowerCase();
 
-    const wrongSongsPool: string[] = [];
-    const seenSongs = new Set<string>();
+    const wrongTitlesPool: string[] = [];
+    const seenTitles = new Set<string>();
 
     for (const track of tracksPool) {
       if (!track?.name) continue;
-      const cleanName = cleanTrackName(track.name) || track.name.trim();
-      const cleanLower = cleanName.toLowerCase();
+      const cleanTitle = cleanTrackName(track.name) || track.name.trim();
+      const cleanTitleLower = cleanTitle.toLowerCase();
 
-      if (cleanLower !== cleanCorrectLower && !seenSongs.has(cleanLower)) {
-        seenSongs.add(cleanLower);
-        wrongSongsPool.push(cleanName);
+      if (cleanTitleLower !== cleanCorrectLower && !seenTitles.has(cleanTitleLower)) {
+        seenTitles.add(cleanTitleLower);
+        wrongTitlesPool.push(cleanTitle);
       }
     }
 
-    const shuffledSongs = shuffleArray(wrongSongsPool);
-    const wrongDistractors: string[] = shuffledSongs.slice(0, 3);
+    const shuffledTitles = shuffleArray(wrongTitlesPool);
+    const randomWrongTitles = shuffledTitles.slice(0, 3);
 
     const fallbackSongs = [
       'Cắt Đôi Nỗi Sầu', 'Hãy Trao Cho Anh', 'Waiting For You', 'Bước Qua Nhau',
@@ -518,17 +496,17 @@ export function generateQuizOptions(
       'Nơi Này Có Anh', 'Chạy Ngay Đi', 'Bên Trên Tầng Lầu'
     ];
     for (const fallback of fallbackSongs) {
-      if (wrongDistractors.length >= 3) break;
+      if (randomWrongTitles.length >= 3) break;
       const cleanFallback = cleanTrackName(fallback);
       const lower = cleanFallback.toLowerCase();
-      if (lower !== cleanCorrectLower && !wrongDistractors.some(d => d.toLowerCase() === lower)) {
-        wrongDistractors.push(cleanFallback);
+      if (lower !== cleanCorrectLower && !randomWrongTitles.some(d => d.toLowerCase() === lower)) {
+        randomWrongTitles.push(cleanFallback);
       }
     }
 
     const options: QuizOptionItem[] = [
-      { label: cleanCorrect, isCorrect: true },
-      ...wrongDistractors.slice(0, 3).map(songTitle => ({ label: songTitle, isCorrect: false })),
+      { label: cleanCorrectTitle, isCorrect: true },
+      ...randomWrongTitles.slice(0, 3).map(title => ({ label: title, isCorrect: false })),
     ];
 
     return shuffleArray(options);
@@ -604,14 +582,14 @@ export async function fetchSpotifyCategoryQuestions(categoryId: string, category
     // Use the fetched tracks as tracksPool
     const tracksPool = rawTracks;
 
-    tracksPool.slice(0, 25).forEach((track: any, index: number) => {
+    tracksPool.slice(0, 30).forEach((track: any, index: number) => {
       const correctArtist = track.artists[0].name;
       const cleanName = cleanTrackName(track.name) || track.name;
       const releaseYear = track.album?.release_date ? parseInt(track.album.release_date.substring(0, 4), 10) : 2023;
 
-      if (index % 3 === 0) {
-        // Question Type 1: "Who is the artist?"
-        const optionsObjects = generateQuizOptions(track, 'artist', tracksPool);
+      if (index % 2 === 0) {
+        // Question Type 1: "Who is the artist?" ('ARTIST_NAME')
+        const optionsObjects = generateQuizOptions(track, 'ARTIST_NAME', tracksPool);
         const options = optionsObjects.map(o => o.label);
         const correctIndex = optionsObjects.findIndex(o => o.isCorrect);
 
@@ -633,9 +611,9 @@ export async function fetchSpotifyCategoryQuestions(categoryId: string, category
             { freq: 880.00, duration: 0.4 },
           ],
         });
-      } else if (index % 3 === 1) {
-        // Question Type 2: "What is the song name?"
-        const optionsObjects = generateQuizOptions(track, 'song_name', tracksPool);
+      } else {
+        // Question Type 2: "What is the song name?" ('SONG_NAME')
+        const optionsObjects = generateQuizOptions(track, 'SONG_NAME', tracksPool);
         const options = optionsObjects.map(o => o.label);
         const correctIndex = optionsObjects.findIndex(o => o.isCorrect);
 
@@ -656,24 +634,6 @@ export async function fetchSpotifyCategoryQuestions(categoryId: string, category
             { freq: 587.33, duration: 0.25 },
             { freq: 659.25, duration: 0.4 },
           ],
-        });
-      } else {
-        // Question Type 3: "What is the release year?"
-        const optionsObjects = generateQuizOptions(track, 'release_year', tracksPool);
-        const options = optionsObjects.map(o => o.label);
-        const correctIndex = optionsObjects.findIndex(o => o.isCorrect);
-
-        generatedQuestions.push({
-          id: `sp-${track.id || index}-${categoryId}-${Date.now()}`,
-          category: categoryId,
-          question: `Ca khúc "${cleanName}" của ${correctArtist} được phát hành vào năm nào?`,
-          promptType: 'year',
-          songTitle: cleanName,
-          artist: correctArtist,
-          releaseYear,
-          options,
-          correctIndex,
-          explanation: `Ca khúc "${cleanName}" của ${correctArtist} được ra mắt vào năm ${releaseYear}.`,
         });
       }
     });

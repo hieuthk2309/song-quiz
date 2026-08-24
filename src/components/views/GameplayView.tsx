@@ -96,11 +96,19 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
 
   // Play question melody
   const playCurrentMelody = useCallback(() => {
-    if (!currentQuestion || !currentQuestion.melodyNotes) return;
+    if (!currentQuestion) return;
+    
+    // Ensure AudioContext is active
+    soundEngine.resumeAudioContext();
+
+    const notes = currentQuestion.melodyNotes && currentQuestion.melodyNotes.length > 0
+      ? currentQuestion.melodyNotes
+      : soundEngine.generateMelodyForTrack(currentQuestion.songTitle || currentQuestion.question, currentQuestion.artist || '');
+
     setIsPlayingMelody(true);
     setAudioElapsed(0);
 
-    soundEngine.playMelody(currentQuestion.melodyNotes, () => {
+    soundEngine.playMelody(notes, () => {
       setIsPlayingMelody(false);
     });
 

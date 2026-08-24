@@ -79,14 +79,14 @@ export async function GET(request: NextRequest) {
     const tracksPool = rawTracks;
     const questions: any[] = [];
 
-    tracksPool.slice(0, 25).forEach((track: any, index: number) => {
+    tracksPool.slice(0, 30).forEach((track: any, index: number) => {
       const correctArtist = track.artists[0].name;
       const cleanName = cleanTrackName(track.name) || track.name;
       const releaseYear = track.album?.release_date ? parseInt(track.album.release_date.substring(0, 4)) : 2023;
 
-      if (index % 3 === 0) {
-        // Guess Artist
-        const optionsObjects = generateQuizOptions(track, 'artist', tracksPool);
+      if (index % 2 === 0) {
+        // Question Type 1: "Who is the artist?"
+        const optionsObjects = generateQuizOptions(track, 'ARTIST_NAME', tracksPool);
         const options = optionsObjects.map(o => o.label);
         const correctIndex = optionsObjects.findIndex(o => o.isCorrect);
 
@@ -101,10 +101,16 @@ export async function GET(request: NextRequest) {
           options,
           correctIndex,
           explanation: `"${cleanName}" được thể hiện bởi ${track.artists.map((a: any) => a.name).join(', ')} (${releaseYear}).`,
+          melodyNotes: [
+            { freq: 523.25 + (index * 40) % 300, duration: 0.3 },
+            { freq: 659.25 + (index * 30) % 200, duration: 0.3 },
+            { freq: 783.99, duration: 0.35 },
+            { freq: 880.00, duration: 0.45 },
+          ],
         });
-      } else if (index % 3 === 1) {
-        // Guess Song
-        const optionsObjects = generateQuizOptions(track, 'song_name', tracksPool);
+      } else {
+        // Question Type 2: "What is the song name?"
+        const optionsObjects = generateQuizOptions(track, 'SONG_NAME', tracksPool);
         const options = optionsObjects.map(o => o.label);
         const correctIndex = optionsObjects.findIndex(o => o.isCorrect);
 
@@ -119,24 +125,12 @@ export async function GET(request: NextRequest) {
           options,
           correctIndex,
           explanation: `"${cleanName}" là bài hát của ${correctArtist} trong playlist (${releaseYear}).`,
-        });
-      } else {
-        // Guess Year
-        const optionsObjects = generateQuizOptions(track, 'release_year', tracksPool);
-        const options = optionsObjects.map(o => o.label);
-        const correctIndex = optionsObjects.findIndex(o => o.isCorrect);
-
-        questions.push({
-          id: `pl-${playlistId}-${track.id || index}-${Date.now()}`,
-          category: `playlist-${playlistId}`,
-          question: `Ca khúc "${cleanName}" của ${correctArtist} được phát hành năm nào?`,
-          promptType: 'year',
-          songTitle: cleanName,
-          artist: correctArtist,
-          releaseYear,
-          options,
-          correctIndex,
-          explanation: `"${cleanName}" của ${correctArtist} ra mắt năm ${releaseYear}.`,
+          melodyNotes: [
+            { freq: 440.0 + (index * 35) % 200, duration: 0.3 },
+            { freq: 523.25, duration: 0.3 },
+            { freq: 587.33, duration: 0.3 },
+            { freq: 659.25, duration: 0.45 },
+          ],
         });
       }
     });

@@ -7,7 +7,7 @@ export const CATEGORIES: QuizCategory[] = [
     tag: 'Popular',
     questionCount: 150,
     icon: 'library_music',
-    coverImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC-mhDkIVbhW_qPboX3smRWrg6N1tZ9BkIkIATFpdeGA32AhxWznLAR7mmhjDL4axCs7xquVnDZFVjnEm7wI7TfsaNYiJPvXAqfxwn2iSuuY9eYBmYA_mVlV7WHWHQPdJL8ZlLoyJNGmDdLVV35MASpDzCzev0ROMPDnKs6UiZMIz_LaSw9c8N4jG4gJBFkKX5qHoqyZt2zxTWq_A5hH31fC4pIekmkE2GxSCIfORxxYl-wFHpei8dyYA',
+    coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
     description: 'Những bản hit bùng nổ các bảng xếp hạng âm nhạc hiện nay.',
     gradient: 'from-[#4f378a]/90 to-[#b70052]/90',
     tagBg: 'bg-[#b70052]',
@@ -18,7 +18,7 @@ export const CATEGORIES: QuizCategory[] = [
     tag: 'Trending',
     questionCount: 200,
     icon: 'album',
-    coverImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuADHATFK37p3uRYoMEw0hXxw4M3ejr2dCD6fhORmcUSr3U8ue_s4nTkwDLb_5-FoiRdyh4yhjD0rQx2xU0cHFyS38wNTf9i7-Bzbqd_JatZ7PBD6iNNRS6RzpKCX2S_V1-yIWNT6izoqtAGVYQITB5OLJdWwWAZFxXlcD6QyGWEVX7BEbJgNBiTc0y9yyEIGanRkOd7rSS_KUh78cSat6MaVNxvonEEh4ewk3kFT9LT_NpLImqDE5ufGQ',
+    coverImage: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
     description: 'Thời kỳ hoàng kim của Pop, EDM và những giai điệu thanh xuân.',
     gradient: 'from-[#006b61]/90 to-[#4f378a]/90',
     tagBg: 'bg-[#4f378a]',
@@ -29,7 +29,7 @@ export const CATEGORIES: QuizCategory[] = [
     tag: 'Niche',
     questionCount: 80,
     icon: 'headphones',
-    coverImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBJiqt8FjFqU_mqChdFQhM1YEJBJDPlEUGV-e702PX03vKa0nGuaiukRKV4kUgqc_tKdRhzOJUrYDejYvDiBBqIMhzaZONa4rMBXLxSUq8Anj3VYuvtOQG_LVF58tRRBt1TZLu8F2m7kHo1IgJ8NOR7h6QKZ82S0dNwE6y_YRrh1WuSOFIJT3iL_NdiD5xDXrtORJ8iEg4KUCDYt9Y-6hyo2ehxvq3XVBZzA-du1zn6SWy0Xns5eaydjg',
+    coverImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
     description: 'Âm nhạc mộc mạc, sâu lắng từ những nghệ sĩ độc lập tài năng.',
     gradient: 'from-[#005148]/90 to-[#17deca]/70',
     tagBg: 'bg-[#005148]',
@@ -40,10 +40,54 @@ export const CATEGORIES: QuizCategory[] = [
     tag: 'Popular',
     questionCount: 120,
     icon: 'mic',
-    coverImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC8KluJZ5T2vpa-oEmHAPaazJqCGm9aBM2oyq28ttIuit3AxACP-GqiU4nFNcjQfHJ8UZdfozb_RbvZlgBs-zGFv5p9ClOvJDIvqVFjdnrlf1P5OcAyCBcKUTVGGoC-_7hA7d4UNTsmGkff_YoGrrdI1c_ZAYNN99iv6yebpNgORH3Cvf81i2f-9HRzxE9W5SIudPCX_j5S0Qu6XX_954LJaGft0RmsrABtYtY6w0Ok8oz2JF3Hr_kceg',
+    coverImage: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
     description: 'Những con flow đỉnh cao, punchline gắt và beat bốc lửa.',
     gradient: 'from-[#b70052]/90 to-[#6750a4]/90',
     tagBg: 'bg-[#dd2269]',
+  },
+  {
+    id: 'ballad',
+    name: 'Ballad Trữ Tình',
+    tag: 'Classic',
+    questionCount: 110,
+    icon: 'favorite',
+    coverImage: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&auto=format&fit=crop&q=80',
+    description: 'Những giai điệu da diết, chạm đến trái tim người nghe.',
+    gradient: 'from-[#4f378a]/90 to-[#005148]/90',
+    tagBg: 'bg-[#4f378a]',
+  },
+  {
+    id: 'genz-viral',
+    name: 'Gen Z & TikTok',
+    tag: 'Trending',
+    questionCount: 95,
+    icon: 'bolt',
+    coverImage: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&auto=format&fit=crop&q=80',
+    description: 'Âm nhạc hiện đại, vũ điệu xu hướng viral khắp mạng xã hội.',
+    gradient: 'from-[#dd2269]/90 to-[#17deca]/80',
+    tagBg: 'bg-[#dd2269]',
+  },
+  {
+    id: 'remix-edm',
+    name: 'Vinahouse & EDM',
+    tag: 'Special',
+    questionCount: 130,
+    icon: 'speaker',
+    coverImage: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&auto=format&fit=crop&q=80',
+    description: 'Bản phối sôi động, bốc lửa cho những bữa tiệc âm nhạc cuồng nhiệt.',
+    gradient: 'from-[#17deca]/80 to-[#b70052]/90',
+    tagBg: 'bg-[#17deca]',
+  },
+  {
+    id: 'ost-movie',
+    name: 'Nhạc Phim OST',
+    tag: 'Classic',
+    questionCount: 75,
+    icon: 'movie',
+    coverImage: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&auto=format&fit=crop&q=80',
+    description: 'Giai điệu bất hủ gắn liền với những bộ phim điện ảnh Việt Nam.',
+    gradient: 'from-[#006b61]/90 to-[#dd2269]/80',
+    tagBg: 'bg-[#006b61]',
   },
 ];
 
@@ -60,12 +104,12 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     correctIndex: 0,
     explanation: 'AMEE chính thức debut vào tháng 4 năm 2019 với đĩa đơn "Anh Nhà Ở Đâu Thế?" kết hợp cùng B Ray và nhanh chóng tạo nên cơn sốt V-pop.',
     melodyNotes: [
-      { freq: 587.33, duration: 0.3 }, // D5
-      { freq: 659.25, duration: 0.3 }, // E5
-      { freq: 783.99, duration: 0.4 }, // G5
-      { freq: 880.00, duration: 0.3 }, // A5
-      { freq: 783.99, duration: 0.3 }, // G5
-      { freq: 659.25, duration: 0.5 }, // E5
+      { freq: 587.33, duration: 0.3 },
+      { freq: 659.25, duration: 0.3 },
+      { freq: 783.99, duration: 0.4 },
+      { freq: 880.00, duration: 0.3 },
+      { freq: 783.99, duration: 0.3 },
+      { freq: 659.25, duration: 0.5 },
     ],
   },
   {
@@ -85,13 +129,13 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     correctIndex: 0,
     explanation: '"Cắt Đôi Nỗi Sầu" của Tăng Duy Tân sản xuất bởi Drum7 phát hành tháng 10/2023, thống trị vị trí #1 trending YouTube và TikTok Việt Nam.',
     melodyNotes: [
-      { freq: 440.0, duration: 0.25 }, // A4
-      { freq: 523.25, duration: 0.25 }, // C5
-      { freq: 587.33, duration: 0.25 }, // D5
-      { freq: 523.25, duration: 0.25 }, // C5
-      { freq: 440.0, duration: 0.35 },  // A4
-      { freq: 392.0, duration: 0.35 },  // G4
-      { freq: 440.0, duration: 0.6 },   // A4
+      { freq: 440.0, duration: 0.25 },
+      { freq: 523.25, duration: 0.25 },
+      { freq: 587.33, duration: 0.25 },
+      { freq: 523.25, duration: 0.25 },
+      { freq: 440.0, duration: 0.35 },
+      { freq: 392.0, duration: 0.35 },
+      { freq: 440.0, duration: 0.6 },
     ],
   },
   {
@@ -106,12 +150,12 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     correctIndex: 1,
     explanation: 'Sơn Tùng M-TP đã hợp tác lịch sử cùng rapper Snoop Dogg và nữ chính Madison Beer trong siêu phẩm "Hãy Trao Cho Anh".',
     melodyNotes: [
-      { freq: 659.25, duration: 0.2 }, // E5
-      { freq: 659.25, duration: 0.2 }, // E5
-      { freq: 587.33, duration: 0.2 }, // D5
-      { freq: 659.25, duration: 0.3 }, // E5
-      { freq: 783.99, duration: 0.4 }, // G5
-      { freq: 659.25, duration: 0.5 }, // E5
+      { freq: 659.25, duration: 0.2 },
+      { freq: 659.25, duration: 0.2 },
+      { freq: 587.33, duration: 0.2 },
+      { freq: 659.25, duration: 0.3 },
+      { freq: 783.99, duration: 0.4 },
+      { freq: 659.25, duration: 0.5 },
     ],
   },
   {
@@ -146,11 +190,11 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     correctIndex: 0,
     explanation: '"Waiting For You" sản xuất bởi Onionn nằm trong album "22" của tân binh MONO đã trở thành ca khúc quốc dân của năm 2022.',
     melodyNotes: [
-      { freq: 493.88, duration: 0.25 }, // B4
-      { freq: 587.33, duration: 0.25 }, // D5
-      { freq: 659.25, duration: 0.3 },  // E5
-      { freq: 587.33, duration: 0.25 }, // D5
-      { freq: 493.88, duration: 0.5 },  // B4
+      { freq: 493.88, duration: 0.25 },
+      { freq: 587.33, duration: 0.25 },
+      { freq: 659.25, duration: 0.3 },
+      { freq: 587.33, duration: 0.25 },
+      { freq: 493.88, duration: 0.5 },
     ],
   },
   {
@@ -243,6 +287,54 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       { freq: 783.99, duration: 0.25 },
       { freq: 880.0, duration: 0.4 },
     ],
+  },
+  {
+    id: 'q-11',
+    category: 'ballad',
+    question: 'Ca khúc ballad quốc dân "Phía Sau Một Cô Gái" (2016) do Tiên Cookie sáng tác được thể hiện bởi ca sĩ nào?',
+    promptType: 'artist',
+    songTitle: 'Phía Sau Một Cô Gái',
+    artist: 'Soobin Hoàng Sơn',
+    releaseYear: 2016,
+    options: ['Soobin Hoàng Sơn', 'Trung Quân Idol', 'Bùi Anh Tuấn', 'Noo Phước Thịnh'],
+    correctIndex: 0,
+    explanation: '"Phía Sau Một Cô Gái" là siêu hit đưa tên tuổi Soobin Hoàng Sơn lên đỉnh cao V-Pop với hàng trăm triệu lượt nghe.',
+  },
+  {
+    id: 'q-12',
+    category: 'genz-viral',
+    question: 'Bản hit "Bật Tình Yêu Lên" do Tăng Duy Tân kết hợp cùng nữ ca sĩ nào?',
+    promptType: 'artist',
+    songTitle: 'Bật Tình Yêu Lên',
+    artist: 'Tăng Duy Tân x Hòa Minzy',
+    releaseYear: 2023,
+    options: ['Hòa Minzy', 'AMEE', 'Vũ Phụng Tiên', 'Phương Ly'],
+    correctIndex: 0,
+    explanation: '"Bật Tình Yêu Lên" phát hành đầu năm 2023 do Hòa Minzy và Tăng Duy Tân song ca đã tạo nên trào lưu nhảy khắp mạng xã hội.',
+  },
+  {
+    id: 'q-13',
+    category: 'ost-movie',
+    question: 'Ca khúc "Có Chàng Trai Viết Lên Cây" của Phan Mạnh Quỳnh là bài hát chủ đề của bộ phim điện ảnh đình đám nào?',
+    promptType: 'album',
+    songTitle: 'Có Chàng Trai Viết Lên Cây',
+    artist: 'Phan Mạnh Quỳnh',
+    releaseYear: 2019,
+    options: ['Mắt Biếc', 'Em Chưa 18', 'Tiệc Trăng Máu', 'Tháng Năm Rực Rỡ'],
+    correctIndex: 0,
+    explanation: '"Có Chàng Trai Viết Lên Cây" là ca khúc linh hồn trong tác phẩm điện ảnh "Mắt Biếc" của đạo diễn Victor Vũ chuyển thể từ truyện Nguyễn Nhật Ánh.',
+  },
+  {
+    id: 'q-14',
+    category: 'remix-edm',
+    question: 'Bản hit "Hai Phút Hơn" (Kaiz Remix) đã gây sốt toàn cầu thuộc về nghệ sĩ nào?',
+    promptType: 'artist',
+    songTitle: '2 Phút Hơn',
+    artist: 'Pháo ft. Kaiz',
+    releaseYear: 2020,
+    options: ['Pháo', 'TLinh', 'Suboi', 'Kimmese'],
+    correctIndex: 0,
+    explanation: '"Hai Phút Hơn" bản Kaiz Remix của nữ rapper trẻ Pháo đã trở thành hiện tượng toàn cầu, đứng top Shazam thế giới.',
   }
 ];
 
@@ -250,7 +342,7 @@ export const INITIAL_LEADERBOARD: LeaderboardPlayer[] = [
   {
     rank: 1,
     name: 'SonTung_OfficialFan',
-    avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBp9F14ZYNPybtpAkMg3DRWBODmjosd7-MzDNqwAuwF4dl80qXQC0NsklwhIOVE3__GH6oJmM7fEZrHQpqcIwnfyna-deZqGx3V7XV8u3osVMo3z0SsW-ecyaWZtHIyOtN-lpfxOBAsOIzJOaxvJZl_IghIloCXnFbWkq68MIB0SGQ32jomVWUWWV5ccelDpABxjyXxVfNiC4V55Mc0ZhNlrkKofWXA7Yui60wmrHHM8SIU3jZGe8ZYJw',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
     score: 18450,
     tier: 'Diamond',
     badge: '🏆 Quán Quân Vpop',
@@ -259,7 +351,7 @@ export const INITIAL_LEADERBOARD: LeaderboardPlayer[] = [
   {
     rank: 2,
     name: 'MelodyHunter_99',
-    avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAow6oQIOU-O1FsLj_3OAN55z6khECTyWjcp4WQunAZAITNZtbw9kQ4X04Mg_CRW6mpi6S5IVxNhDVeSbEJJ_FyewQchDf0wLZ8QfdpHq9INiqPsmKSYzv5XHiV8W-LRPCU7KMsVxRAAl49vKWkyP6lCdI_0VEjDgwXqOPcaNoXL71TdWLFPbrAtxtRS7F4FHZmWGbEGmzZinIYHH6prTGF8JSE-VFR7gBDFYMxOI7oSbn6SfpEJ71y9w',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
     score: 17200,
     tier: 'Diamond',
     badge: '⚡ Siêu Thính Giác',
@@ -268,7 +360,7 @@ export const INITIAL_LEADERBOARD: LeaderboardPlayer[] = [
   {
     rank: 3,
     name: 'IndieLover_Vn',
-    avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEbQ4vayRryqOrKLDxJNpXQNjpYQRN4wPS1j4WyeagYDO3th3hPj52RMSrZmET3TTK8TjQtyq-oVinLFQjspDFvgoifUdgdkdKvZXcgyVJIPYfTGiDC7RFsJ320XXiF9l-qUHAHrWxkVzGsAiqSNP1kXEiOeLzhQuS0UqoXJ4qvI9RNr0Cj2zb_h6qwjUobxcqQKH4dRC_g_rMtCGbXT1O3gdf2Q-Bjn4a2sGwmP0uenkmnxYrMC0zEA',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80',
     score: 16100,
     tier: 'Diamond',
     badge: '🎵 Chill Master',
@@ -277,7 +369,7 @@ export const INITIAL_LEADERBOARD: LeaderboardPlayer[] = [
   {
     rank: 42,
     name: 'Bạn (Player)',
-    avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC46dd6dOyLzYc9J5PXdcmCnvq4EBFYgZyKv7g6vsg4EpvlmVmpELJkUkxmZ8OLaJmjtkLGsfLMj1a75hRNc7qL5ECKd0VDlD9IQmfHHalf9cVt9bLuzk_Qko--bycL5mWDWwLE3j9-MWMDGy6ALcQE38lBuoakgj3Roq8fMHImVuN7BtZ_Xu4qxphBOA2fO-A-_smi5L-otneAOcAhWDVhapLRVfVOOzwxdOHTrOuAA_ZVSVfd2AhE9g',
+    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
     score: 14250,
     tier: 'Gold',
     badge: '🔥 Fan Cứng Vpop',
@@ -287,7 +379,7 @@ export const INITIAL_LEADERBOARD: LeaderboardPlayer[] = [
   {
     rank: 43,
     name: 'RapViet_Freestyle',
-    avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBp9F14ZYNPybtpAkMg3DRWBODmjosd7-MzDNqwAuwF4dl80qXQC0NsklwhIOVE3__GH6oJmM7fEZrHQpqcIwnfyna-deZqGx3V7XV8u3osVMo3z0SsW-ecyaWZtHIyOtN-lpfxOBAsOIzJOaxvJZl_IghIloCXnFbWkq68MIB0SGQ32jomVWUWWV5ccelDpABxjyXxVfNiC4V55Mc0ZhNlrkKofWXA7Yui60wmrHHM8SIU3jZGe8ZYJw',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
     score: 14100,
     tier: 'Gold',
     badge: '🎤 Flow Master',
@@ -296,8 +388,9 @@ export const INITIAL_LEADERBOARD: LeaderboardPlayer[] = [
 ];
 
 export const AVATAR_OPTIONS = [
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuBp9F14ZYNPybtpAkMg3DRWBODmjosd7-MzDNqwAuwF4dl80qXQC0NsklwhIOVE3__GH6oJmM7fEZrHQpqcIwnfyna-deZqGx3V7XV8u3osVMo3z0SsW-ecyaWZtHIyOtN-lpfxOBAsOIzJOaxvJZl_IghIloCXnFbWkq68MIB0SGQ32jomVWUWWV5ccelDpABxjyXxVfNiC4V55Mc0ZhNlrkKofWXA7Yui60wmrHHM8SIU3jZGe8ZYJw',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuC46dd6dOyLzYc9J5PXdcmCnvq4EBFYgZyKv7g6vsg4EpvlmVmpELJkUkxmZ8OLaJmjtkLGsfLMj1a75hRNc7qL5ECKd0VDlD9IQmfHHalf9cVt9bLuzk_Qko--bycL5mWDWwLE3j9-MWMDGy6ALcQE38lBuoakgj3Roq8fMHImVuN7BtZ_Xu4qxphBOA2fO-A-_smi5L-otneAOcAhWDVhapLRVfVOOzwxdOHTrOuAA_ZVSVfd2AhE9g',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAow6oQIOU-O1FsLj_3OAN55z6khECTyWjcp4WQunAZAITNZtbw9kQ4X04Mg_CRW6mpi6S5IVxNhDVeSbEJJ_FyewQchDf0wLZ8QfdpHq9INiqPsmKSYzv5XHiV8W-LRPCU7KMsVxRAAl49vKWkyP6lCdI_0VEjDgwXqOPcaNoXL71TdWLFPbrAtxtRS7F4FHZmWGbEGmzZinIYHH6prTGF8JSE-VFR7gBDFYMxOI7oSbn6SfpEJ71y9w',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDEbQ4vayRryqOrKLDxJNpXQNjpYQRN4wPS1j4WyeagYDO3th3hPj52RMSrZmET3TTK8TjQtyq-oVinLFQjspDFvgoifUdgdkdKvZXcgyVJIPYfTGiDC7RFsJ320XXiF9l-qUHAHrWxkVzGsAiqSNP1kXEiOeLzhQuS0UqoXJ4qvI9RNr0Cj2zb_h6qwjUobxcqQKH4dRC_g_rMtCGbXT1O3gdf2Q-Bjn4a2sGwmP0uenkmnxYrMC0zEA'
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80'
 ];

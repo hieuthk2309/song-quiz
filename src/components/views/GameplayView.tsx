@@ -35,15 +35,50 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
   const timerRef = useRef<number | null>(null);
   const audioIntervalRef = useRef<number | null>(null);
 
-  // Initialize questions
+  // Initialize questions dynamically
   useEffect(() => {
-    let filtered = QUIZ_QUESTIONS.filter((q) => q.category === category);
-    if (filtered.length < 5) {
-      filtered = [...QUIZ_QUESTIONS];
+    let isMounted = true;
+
+    async function loadQuestions() {
+      // 1. Initial fallback questions
+      let defaultList = QUIZ_QUESTIONS.filter((q) => q.category === category);
+      if (defaultList.length < 4) {
+        defaultList = [...QUIZ_QUESTIONS];
+      }
+      const shuffledDefault = [...defaultList].sort(() => Math.random() - 0.5);
+
+      try {
+        // Detect if category is a personal Spotify playlist
+        const isPlaylist = category.startsWith('playlist-');
+        let apiUrl: string;
+        if (isPlaylist) {
+          const playlistId = category.replace('playlist-', '');
+          apiUrl = `/api/spotify/playlist-questions?playlistId=${encodeURIComponent(playlistId)}&seed=${Date.now()}`;
+        } else {
+          apiUrl = `/api/spotify/questions?categoryId=${encodeURIComponent(category)}&seed=${Date.now()}`;
+        }
+
+        const res = await fetch(apiUrl, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.questions && data.questions.length >= 4 && isMounted) {
+            const shuffledApi = [...data.questions].sort(() => Math.random() - 0.5);
+            // Random mode gets 30 questions, others get 20
+            const limit = category === 'random' ? 30 : 20;
+            setQuestions(shuffledApi.slice(0, limit));
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Using local question bank:', e);
+      }
+
+      if (isMounted) {
+        setQuestions(shuffledDefault.slice(0, 20));
+      }
     }
-    // Shuffle questions slightly for variety
-    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
-    setQuestions(shuffled.slice(0, 10));
+
+    loadQuestions();
     setCurrentIndex(0);
     setScore(0);
     setCorrectCount(0);
@@ -51,6 +86,10 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
     setCurrentStreak(0);
     setMaxStreak(0);
     startTimeRef.current = Date.now();
+
+    return () => {
+      isMounted = false;
+    };
   }, [category]);
 
   const currentQuestion: QuizQuestion | undefined = questions[currentIndex];

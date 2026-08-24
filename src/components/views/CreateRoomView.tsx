@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
-import { ViewMode, UserProfile, RoomParticipant } from '../../types';
-import { CATEGORIES } from '../../data/quizData';
+import { ViewMode, UserProfile, RoomParticipant, QuizCategory } from '../../types';
+import { CATEGORIES as DEFAULT_CATEGORIES } from '../../data/quizData';
 import { soundEngine } from '../../utils/soundEngine';
 
 interface CreateRoomViewProps {
   user: UserProfile;
+  categories?: QuizCategory[];
   onNavigate: (view: ViewMode) => void;
   onStartRoomGame: (category: string) => void;
 }
 
 export const CreateRoomView: React.FC<CreateRoomViewProps> = ({
   user,
+  categories = DEFAULT_CATEGORIES,
   onNavigate,
   onStartRoomGame,
 }) => {
+  const currentCategories = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES;
   const [roomPin] = useState<string>('TP9902');
-  const [selectedCategory, setSelectedCategory] = useState<string>('hot-pop');
+  const [selectedCategory, setSelectedCategory] = useState<string>(currentCategories[0]?.id || 'hot-pop');
   const [questionCount, setQuestionCount] = useState<number>(10);
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -112,7 +115,7 @@ export const CreateRoomView: React.FC<CreateRoomViewProps> = ({
                 Thể loại âm nhạc
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {CATEGORIES.map((cat) => (
+                {currentCategories.map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => {
@@ -125,7 +128,7 @@ export const CreateRoomView: React.FC<CreateRoomViewProps> = ({
                         : 'border-[#cbc4d2] bg-[#f9f9f9] text-[#1a1c1c] hover:bg-[#f3f3f3]'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[20px]">{cat.icon}</span>
+                    <span className="material-symbols-outlined text-[20px]">{cat.icon || 'music_note'}</span>
                     <span className="text-xs md:text-sm line-clamp-1">{cat.name}</span>
                   </button>
                 ))}

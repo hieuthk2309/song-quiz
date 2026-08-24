@@ -6,6 +6,7 @@ import { soundEngine } from '../../utils/soundEngine';
 interface HomeViewProps {
   user: UserProfile;
   categories?: QuizCategory[];
+  isLoadingCategories?: boolean;
   isSpotifyActive?: boolean;
   spotifyUser?: { displayName: string; avatar: string | null } | null;
   myPlaylists?: any[];
@@ -17,6 +18,7 @@ interface HomeViewProps {
 export const HomeView: React.FC<HomeViewProps> = ({
   user,
   categories = DEFAULT_CATEGORIES,
+  isLoadingCategories = false,
   isSpotifyActive = true,
   spotifyUser = null,
   myPlaylists = [],
@@ -66,7 +68,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </h2>
 
             <p className="text-base sm:text-lg text-[#cfbcff] max-w-xl">
-              Thử thách kiến thức âm nhạc của bạn về những bản hit, nghệ sĩ và giai điệu đỉnh cao. Khám phá {currentCategories.length} danh mục âm nhạc phong phú!
+              Thử thách kiến thức âm nhạc của bạn về những bản hit, nghệ sĩ và giai điệu đỉnh cao. Khám phá {isLoadingCategories ? 'hàng chục' : currentCategories.length} danh mục âm nhạc phong phú!
             </p>
 
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3.5 pt-2">
@@ -135,7 +137,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[#7a7582]">Chủ đề đang chọn</p>
               <h4 className="font-bold text-base md:text-lg text-[#1a1c1c]">
-                {currentCategories.find((c) => c.id === selectedTopic)?.name || currentCategories[0]?.name || 'Hot Pop'}
+                {isLoadingCategories
+                  ? 'Đang tải danh mục...'
+                  : currentCategories.find((c) => c.id === selectedTopic)?.name || currentCategories[0]?.name || 'Hot Pop'}
               </h4>
             </div>
           </div>
@@ -145,27 +149,35 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <select
                 id="select-topic-dropdown"
                 value={selectedTopic}
+                disabled={isLoadingCategories}
                 onChange={(e) => {
                   soundEngine.playClick();
                   setSelectedTopic(e.target.value);
                 }}
-                className="w-full appearance-none bg-[#f9f9f9] border border-[#cbc4d2] text-[#1a1c1c] font-medium text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#4f378a] focus:border-[#4f378a] transition-all cursor-pointer"
+                className="w-full appearance-none bg-[#f9f9f9] border border-[#cbc4d2] text-[#1a1c1c] font-medium text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#4f378a] focus:border-[#4f378a] transition-all cursor-pointer disabled:opacity-60"
               >
-                {currentCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name} ({cat.questionCount}+ câu)
-                  </option>
-                ))}
+                {isLoadingCategories ? (
+                  <option>Đang tải danh mục từ Spotify...</option>
+                ) : (
+                  currentCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} ({cat.questionCount}+ câu)
+                    </option>
+                  ))
+                )}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#7a7582]">
-                <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                <span className="material-symbols-outlined text-[20px]">
+                  {isLoadingCategories ? 'progress_activity' : 'expand_more'}
+                </span>
               </div>
             </div>
 
             <button
               id="btn-quick-start-topic"
               onClick={handleQuickPlay}
-              className="w-full sm:w-auto bg-[#b70052] hover:bg-[#dd2269] text-white font-semibold text-sm px-6 py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              disabled={isLoadingCategories}
+              className="w-full sm:w-auto bg-[#b70052] hover:bg-[#dd2269] text-white font-semibold text-sm px-6 py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-60"
             >
               <span className="material-symbols-outlined text-[20px]">play_circle</span>
               Chơi ngay
@@ -180,9 +192,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-2xl md:text-3xl font-bold text-[#1a1c1c]">Danh mục bài hát</h3>
-              <span className="bg-[#e9ddff] text-[#4f378a] text-xs font-bold px-2.5 py-0.5 rounded-full">
-                {currentCategories.length} chủ đề
-              </span>
+              {isLoadingCategories ? (
+                <span className="inline-flex items-center gap-1.5 bg-[#1db954]/15 text-[#1db954] text-xs font-bold px-3 py-1 rounded-full border border-[#1db954]/30 animate-pulse">
+                  <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                  Đang đồng bộ từ Spotify...
+                </span>
+              ) : (
+                <span className="bg-[#e9ddff] text-[#4f378a] text-xs font-bold px-2.5 py-0.5 rounded-full">
+                  {currentCategories.length} chủ đề
+                </span>
+              )}
             </div>
             <p className="text-sm text-[#494551] mt-1">Chọn lĩnh vực âm nhạc sở trường để bắt đầu thử thách</p>
           </div>
@@ -192,6 +211,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             {['all', 'popular', 'trending', 'niche', 'classic', 'special'].map((filter) => (
               <button
                 key={filter}
+                disabled={isLoadingCategories}
                 onClick={() => {
                   soundEngine.playClick();
                   setSelectedFilter(filter);
@@ -200,7 +220,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   selectedFilter === filter
                     ? 'bg-[#4f378a] text-white shadow-xs'
                     : 'bg-white text-[#494551] border border-[#cbc4d2] hover:bg-[#f3f3f3]'
-                }`}
+                } ${isLoadingCategories ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {filter === 'all' ? 'Tất cả' : filter}
               </button>
@@ -208,47 +228,75 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {filteredCategories.map((category) => (
-            <div
-              key={category.id}
-              onClick={() => {
-                soundEngine.playClick();
-                onStartQuiz(category.id);
-              }}
-              className="group relative overflow-hidden rounded-3xl bg-white border border-[#e2e2e2] cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-72 flex flex-col justify-end p-6"
-            >
-              {/* Background Cover */}
+        {/* Categories Content: Loading Animation or Grid */}
+        {isLoadingCategories ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
               <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                style={{ backgroundImage: `url('${category.coverImage}')` }}
-              />
+                key={item}
+                className="relative overflow-hidden rounded-3xl bg-[#f0edf5] border border-[#e2e2e2] h-72 flex flex-col justify-end p-6 animate-pulse"
+              >
+                {/* Shimmer overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
 
-              {/* Gradient Scrim */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1a1c1c]/95 via-[#1a1c1c]/50 to-transparent" />
+                {/* Placeholder content skeleton */}
+                <div className="relative z-10 flex flex-col gap-3">
+                  <div className="h-5 w-20 bg-[#cbc4d2]/60 rounded-full" />
+                  <div className="h-6 w-3/4 bg-[#cbc4d2]/70 rounded-lg" />
+                  <div className="h-3 w-full bg-[#cbc4d2]/40 rounded-md" />
+                  <div className="h-3 w-2/3 bg-[#cbc4d2]/40 rounded-md" />
 
-              {/* Card Content */}
-              <div className="relative z-10 text-white flex flex-col">
-                <span
-                  className={`${category.tagBg || 'bg-[#4f378a]'} text-white text-xs font-semibold px-3 py-1 rounded-full mb-2.5 self-start shadow-xs`}
-                >
-                  {category.tag}
-                </span>
-                <h4 className="text-xl font-bold tracking-tight">{category.name}</h4>
-                <p className="text-xs text-[#e2e2e2]/80 mt-1 line-clamp-2">{category.description}</p>
-                <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-[#cfbcff]">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <span className="material-symbols-outlined text-[16px]">{category.icon || 'music_note'}</span>
-                    {category.questionCount}+ Câu hỏi
-                  </span>
-                  <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform text-[#4ffbe6]">
-                    arrow_forward
-                  </span>
+                  <div className="mt-2 pt-3 border-t border-[#cbc4d2]/40 flex items-center justify-between">
+                    <div className="h-4 w-24 bg-[#cbc4d2]/50 rounded-md" />
+                    <div className="w-5 h-5 rounded-full bg-[#cbc4d2]/50" />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 animate-in fade-in duration-300">
+            {filteredCategories.map((category) => (
+              <div
+                key={category.id}
+                onClick={() => {
+                  soundEngine.playClick();
+                  onStartQuiz(category.id);
+                }}
+                className="group relative overflow-hidden rounded-3xl bg-white border border-[#e2e2e2] cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-72 flex flex-col justify-end p-6"
+              >
+                {/* Background Cover */}
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                  style={{ backgroundImage: `url('${category.coverImage}')` }}
+                />
+
+                {/* Gradient Scrim */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1a1c1c]/95 via-[#1a1c1c]/50 to-transparent" />
+
+                {/* Card Content */}
+                <div className="relative z-10 text-white flex flex-col">
+                  <span
+                    className={`${category.tagBg || 'bg-[#4f378a]'} text-white text-xs font-semibold px-3 py-1 rounded-full mb-2.5 self-start shadow-xs`}
+                  >
+                    {category.tag}
+                  </span>
+                  <h4 className="text-xl font-bold tracking-tight">{category.name}</h4>
+                  <p className="text-xs text-[#e2e2e2]/80 mt-1 line-clamp-2">{category.description}</p>
+                  <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-[#cfbcff]">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span className="material-symbols-outlined text-[16px]">{category.icon || 'music_note'}</span>
+                      {category.questionCount}+ Câu hỏi
+                    </span>
+                    <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform text-[#4ffbe6]">
+                      arrow_forward
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* My Spotify Playlists Section */}

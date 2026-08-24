@@ -82,6 +82,7 @@ export function App() {
 
   // Dynamic Spotify Categories
   const [categories, setCategories] = useState<QuizCategory[]>(DEFAULT_CATEGORIES);
+  const [isLoadingCategories, setIsLoadingCategories] = useState<boolean>(true);
   const [isSpotifyActive, setIsSpotifyActive] = useState<boolean>(false);
 
   // Spotify OAuth User Playlists
@@ -98,6 +99,7 @@ export function App() {
   // Fetch dynamic categories from Spotify API Route
   useEffect(() => {
     async function loadCategories() {
+      setIsLoadingCategories(true);
       try {
         const res = await fetch('/api/spotify/categories');
         if (res.ok) {
@@ -105,10 +107,18 @@ export function App() {
           if (data.success && data.categories && data.categories.length > 0) {
             setCategories(data.categories);
             setIsSpotifyActive(data.source === 'spotify');
+            return;
           }
         }
+        // Fallback to default catalog if API response is invalid or empty
+        setCategories(DEFAULT_CATEGORIES);
+        setIsSpotifyActive(false);
       } catch (err) {
-        console.warn('Could not fetch Spotify categories, using rich catalog.', err);
+        console.warn('Could not fetch Spotify categories, using fallback catalog.', err);
+        setCategories(DEFAULT_CATEGORIES);
+        setIsSpotifyActive(false);
+      } finally {
+        setIsLoadingCategories(false);
       }
     }
     loadCategories();
@@ -266,6 +276,7 @@ export function App() {
           <HomeView
             user={user}
             categories={categories}
+            isLoadingCategories={isLoadingCategories}
             isSpotifyActive={isSpotifyActive}
             spotifyUser={spotifyUser}
             myPlaylists={myPlaylists}

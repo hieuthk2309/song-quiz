@@ -100,6 +100,8 @@ export async function GET(request: NextRequest) {
           releaseYear,
           options,
           correctIndex,
+          spotifyId: track.id,
+          spotifyUri: track.uri || (track.id ? `spotify:track:${track.id}` : undefined),
           explanation: `"${cleanName}" được thể hiện bởi ${track.artists.map((a: any) => a.name).join(', ')} (${releaseYear}).`,
           melodyNotes: [
             { freq: 523.25 + (index * 40) % 300, duration: 0.3 },
@@ -124,6 +126,8 @@ export async function GET(request: NextRequest) {
           releaseYear,
           options,
           correctIndex,
+          spotifyId: track.id,
+          spotifyUri: track.uri || (track.id ? `spotify:track:${track.id}` : undefined),
           explanation: `"${cleanName}" là bài hát của ${correctArtist} trong playlist (${releaseYear}).`,
           melodyNotes: [
             { freq: 440.0 + (index * 35) % 200, duration: 0.3 },

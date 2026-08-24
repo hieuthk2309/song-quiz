@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { QuizQuestion, ViewMode, MatchResult } from '../../types';
 import { QUIZ_QUESTIONS } from '../../data/quizData';
 import { soundEngine } from '../../utils/soundEngine';
+import { spotifyPlayer } from '../../utils/spotifyPlayer';
 import { ShaderSoundwave } from '../common/ShaderSoundwave';
 
 interface GameplayViewProps {
@@ -29,11 +30,20 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [maxStreak, setMaxStreak] = useState<number>(0);
   const [isPlayingMelody, setIsPlayingMelody] = useState<boolean>(true);
+  const [isSpotifyStreaming, setIsSpotifyStreaming] = useState<boolean>(false);
   const [audioElapsed, setAudioElapsed] = useState<number>(0);
 
   const startTimeRef = useRef<number>(Date.now());
   const timerRef = useRef<number | null>(null);
   const audioIntervalRef = useRef<number | null>(null);
+
+  // Initialize Spotify Web Playback SDK
+  useEffect(() => {
+    spotifyPlayer.init().catch(() => {});
+    return () => {
+      spotifyPlayer.pause();
+    };
+  }, []);
 
   // Initialize questions dynamically
   useEffect(() => {
@@ -89,28 +99,44 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
 
     return () => {
       isMounted = false;
+      spotifyPlayer.pause();
     };
   }, [category]);
 
   const currentQuestion: QuizQuestion | undefined = questions[currentIndex];
 
-  // Play question melody
-  const playCurrentMelody = useCallback(() => {
+  // Play question melody / stream via Spotify
+  const playCurrentMelody = useCallback(async () => {
     if (!currentQuestion) return;
     
     // Ensure AudioContext is active
     soundEngine.resumeAudioContext();
-
-    const notes = currentQuestion.melodyNotes && currentQuestion.melodyNotes.length > 0
-      ? currentQuestion.melodyNotes
-      : soundEngine.generateMelodyForTrack(currentQuestion.songTitle || currentQuestion.question, currentQuestion.artist || '');
-
     setIsPlayingMelody(true);
     setAudioElapsed(0);
 
-    soundEngine.playMelody(notes, () => {
-      setIsPlayingMelody(false);
-    });
+    let streamedViaSpotify = false;
+
+    // Try Spotify Web Playback SDK streaming if player is ready
+    if (spotifyPlayer.getIsReady() && (currentQuestion.spotifyUri || currentQuestion.spotifyId)) {
+      const target = currentQuestion.spotifyUri || currentQuestion.spotifyId!;
+      const played = await spotifyPlayer.playTrack(target, 25000);
+      if (played) {
+        streamedViaSpotify = true;
+        setIsSpotifyStreaming(true);
+      }
+    }
+
+    // Fallback to rich Web Audio harmonic synthesizer
+    if (!streamedViaSpotify) {
+      setIsSpotifyStreaming(false);
+      const notes = currentQuestion.melodyNotes && currentQuestion.melodyNotes.length > 0
+        ? currentQuestion.melodyNotes
+        : soundEngine.generateMelodyForTrack(currentQuestion.songTitle || currentQuestion.question, currentQuestion.artist || '');
+
+      soundEngine.playMelody(notes, () => {
+        setIsPlayingMelody(false);
+      });
+    }
 
     if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
     audioIntervalRef.current = window.setInterval(() => {
@@ -152,17 +178,18 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
 
   // Handle user answer
   const handleAnswer = (optionIndex: number) => {
-    if (isAnswered || !currentQuestion) return;
+    if (isAnswered) return;
 
     if (timerRef.current) clearInterval(timerRef.current);
     if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
     soundEngine.stopCurrentAudio();
+    spotifyPlayer.pause();
     setIsPlayingMelody(false);
 
     setSelectedOption(optionIndex);
     setIsAnswered(true);
 
-    const isCorrect = optionIndex === currentQuestion.correctIndex;
+    const isCorrect = optionIndex === currentQuestion?.correctIndex;
 
     if (isCorrect) {
       soundEngine.playCorrect();
@@ -193,7 +220,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
         const finalResult: MatchResult = {
           id: `match-${Date.now()}`,
           date: new Date().toLocaleDateString('vi-VN'),
-          categoryName: currentQuestion.category.toUpperCase(),
+          categoryName: currentQuestion?.category.toUpperCase() || 'UNKNOWN',
           score: score + (isCorrect ? 100 : 0),
           maxScore: questions.length * 250,
           correctCount: correctCount + (isCorrect ? 1 : 0),
@@ -231,6 +258,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
             onClick={() => {
               soundEngine.playClick();
               soundEngine.stopCurrentAudio();
+              spotifyPlayer.pause();
               onExit('home');
             }}
             aria-label="Thoát trò chơi"
@@ -308,17 +336,25 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
 
             {/* Scrim & Playing Indicator */}
             <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex flex-col items-center justify-center text-white pointer-events-none p-4">
-              <div className="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full backdrop-blur-md border border-white/20">
-                <span
-                  className={`material-symbols-outlined text-2xl ${
-                    isPlayingMelody ? 'animate-pulse text-[#4ffbe6]' : 'text-white/60'
-                  }`}
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  graphic_eq
-                </span>
+              <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full backdrop-blur-md border border-white/20">
+                {isSpotifyStreaming ? (
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#1db954] shrink-0 animate-pulse"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                ) : (
+                  <span
+                    className={`material-symbols-outlined text-2xl ${
+                      isPlayingMelody ? 'animate-pulse text-[#4ffbe6]' : 'text-white/60'
+                    }`}
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    graphic_eq
+                  </span>
+                )}
                 <span className="text-sm font-medium tracking-wide">
-                  {isPlayingMelody ? 'Đang phát giai điệu...' : 'Tạm dừng giai điệu'}
+                  {isSpotifyStreaming
+                    ? 'Đang phát từ Spotify Premium'
+                    : isPlayingMelody
+                    ? 'Đang phát giai điệu...'
+                    : 'Tạm dừng giai điệu'}
                 </span>
               </div>
             </div>

@@ -603,6 +603,8 @@ export async function fetchSpotifyCategoryQuestions(categoryId: string, category
           releaseYear,
           options,
           correctIndex,
+          spotifyId: track.id,
+          spotifyUri: track.uri || (track.id ? `spotify:track:${track.id}` : undefined),
           explanation: `Ca khúc "${cleanName}" do ${track.artists.map((a: any) => a.name).join(', ')} thể hiện (${releaseYear}).`,
           melodyNotes: [
             { freq: 523.25 + (index * 40) % 300, duration: 0.25 },
@@ -627,6 +629,8 @@ export async function fetchSpotifyCategoryQuestions(categoryId: string, category
           releaseYear,
           options,
           correctIndex,
+          spotifyId: track.id,
+          spotifyUri: track.uri || (track.id ? `spotify:track:${track.id}` : undefined),
           explanation: `Bản hit "${cleanName}" của ${correctArtist} (${releaseYear}).`,
           melodyNotes: [
             { freq: 440.0 + (index * 35) % 200, duration: 0.25 },

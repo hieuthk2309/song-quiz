@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { QuizQuestion, ViewMode, MatchResult } from '../../types';
 import { QUIZ_QUESTIONS } from '../../data/quizData';
 import { soundEngine } from '../../utils/soundEngine';
-import { spotifyPlayer } from '../../utils/spotifyPlayer';
+import { audioPreview } from '../../utils/audioPreview';
 import { ShaderSoundwave } from '../common/ShaderSoundwave';
 
 interface GameplayViewProps {
@@ -18,7 +18,6 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
   onFinishGame,
   onExit,
 }) => {
-  // Filter questions by category or use all if category not specified
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -30,35 +29,24 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [maxStreak, setMaxStreak] = useState<number>(0);
   const [isPlayingMelody, setIsPlayingMelody] = useState<boolean>(true);
-  const [isSpotifyStreaming, setIsSpotifyStreaming] = useState<boolean>(false);
+  const [previewSource, setPreviewSource] = useState<'itunes' | 'deezer' | 'synth' | null>(null);
   const [audioElapsed, setAudioElapsed] = useState<number>(0);
 
   const startTimeRef = useRef<number>(Date.now());
   const timerRef = useRef<number | null>(null);
   const audioIntervalRef = useRef<number | null>(null);
 
-  // Initialize Spotify Web Playback SDK
-  useEffect(() => {
-    spotifyPlayer.init().catch(() => {});
-    return () => {
-      spotifyPlayer.pause();
-    };
-  }, []);
-
   // Initialize questions dynamically
   useEffect(() => {
     let isMounted = true;
 
     async function loadQuestions() {
-      // 1. Initial fallback questions
+      // Fallback to local question bank
       let defaultList = QUIZ_QUESTIONS.filter((q) => q.category === category);
-      if (defaultList.length < 4) {
-        defaultList = [...QUIZ_QUESTIONS];
-      }
+      if (defaultList.length < 4) defaultList = [...QUIZ_QUESTIONS];
       const shuffledDefault = [...defaultList].sort(() => Math.random() - 0.5);
 
       try {
-        // Detect if category is a personal Spotify playlist
         const isPlaylist = category.startsWith('playlist-');
         let apiUrl: string;
         if (isPlaylist) {
@@ -73,7 +61,6 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
           const data = await res.json();
           if (data.success && data.questions && data.questions.length >= 4 && isMounted) {
             const shuffledApi = [...data.questions].sort(() => Math.random() - 0.5);
-            // Random mode gets 30 questions, others get 20
             const limit = category === 'random' ? 30 : 20;
             setQuestions(shuffledApi.slice(0, limit));
             return;
@@ -83,9 +70,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
         console.warn('Using local question bank:', e);
       }
 
-      if (isMounted) {
-        setQuestions(shuffledDefault.slice(0, 20));
-      }
+      if (isMounted) setQuestions(shuffledDefault.slice(0, 20));
     }
 
     loadQuestions();
@@ -99,40 +84,43 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
 
     return () => {
       isMounted = false;
-      spotifyPlayer.pause();
+      audioPreview.stop();
     };
   }, [category]);
 
   const currentQuestion: QuizQuestion | undefined = questions[currentIndex];
 
-  // Play question melody / stream via Spotify
+  // ── Play preview audio ─────────────────────────────────────────────────────
   const playCurrentMelody = useCallback(async () => {
     if (!currentQuestion) return;
-    
-    // Ensure AudioContext is active
+
     soundEngine.resumeAudioContext();
     setIsPlayingMelody(true);
+    setPreviewSource(null);
     setAudioElapsed(0);
 
-    let streamedViaSpotify = false;
+    // Stop any currently playing audio
+    audioPreview.stop();
+    soundEngine.stopCurrentAudio();
 
-    // Try Spotify Web Playback SDK streaming if player is ready
-    if (spotifyPlayer.getIsReady() && (currentQuestion.spotifyUri || currentQuestion.spotifyId)) {
-      const target = currentQuestion.spotifyUri || currentQuestion.spotifyId!;
-      const played = await spotifyPlayer.playTrack(target, 25000);
-      if (played) {
-        streamedViaSpotify = true;
-        setIsSpotifyStreaming(true);
-      }
-    }
+    const title = currentQuestion.songTitle || currentQuestion.question;
+    const artist = currentQuestion.artist || '';
 
-    // Fallback to rich Web Audio harmonic synthesizer
-    if (!streamedViaSpotify) {
-      setIsSpotifyStreaming(false);
-      const notes = currentQuestion.melodyNotes && currentQuestion.melodyNotes.length > 0
-        ? currentQuestion.melodyNotes
-        : soundEngine.generateMelodyForTrack(currentQuestion.songTitle || currentQuestion.question, currentQuestion.artist || '');
+    // Try iTunes/Deezer preview first
+    const result = await audioPreview.playPreview(title, artist, 0, () => {
+      setIsPlayingMelody(false);
+    });
 
+    if (result === 'playing') {
+      const src = audioPreview.getSource() as 'itunes' | 'deezer' | null;
+      setPreviewSource(src ?? 'itunes');
+    } else {
+      // Fallback: harmonic Web Audio synthesizer
+      setPreviewSource('synth');
+      const notes =
+        currentQuestion.melodyNotes && currentQuestion.melodyNotes.length > 0
+          ? currentQuestion.melodyNotes
+          : soundEngine.generateMelodyForTrack(title, artist);
       soundEngine.playMelody(notes, () => {
         setIsPlayingMelody(false);
       });
@@ -140,11 +128,11 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
 
     if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
     audioIntervalRef.current = window.setInterval(() => {
-      setAudioElapsed((prev) => (prev < 15 ? prev + 1 : 15));
+      setAudioElapsed((prev) => (prev < 29 ? prev + 1 : 29));
     }, 1000);
   }, [currentQuestion]);
 
-  // Start question countdown timer and melody
+  // Start countdown timer and preview on each new question
   useEffect(() => {
     if (!currentQuestion) return;
 
@@ -154,14 +142,10 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
     playCurrentMelody();
 
     if (timerRef.current) clearInterval(timerRef.current);
-
     timerRef.current = window.setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 4 && prev > 1) {
-          soundEngine.playTick();
-        }
+        if (prev <= 4 && prev > 1) soundEngine.playTick();
         if (prev <= 1) {
-          // Timeout -> count as wrong
           handleAnswer(-1);
           return 0;
         }
@@ -174,6 +158,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
       if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
       soundEngine.stopCurrentAudio();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, currentQuestion]);
 
   // Handle user answer
@@ -183,7 +168,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
     if (timerRef.current) clearInterval(timerRef.current);
     if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
     soundEngine.stopCurrentAudio();
-    spotifyPlayer.pause();
+    audioPreview.stop();
     setIsPlayingMelody(false);
 
     setSelectedOption(optionIndex);
@@ -195,9 +180,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
       soundEngine.playCorrect();
       const speedBonus = timeLeft * 10;
       const streakBonus = currentStreak * 20;
-      const pointsEarned = 100 + speedBonus + streakBonus;
-
-      setScore((prev) => prev + pointsEarned);
+      setScore((prev) => prev + 100 + speedBonus + streakBonus);
       setCorrectCount((prev) => prev + 1);
       setCurrentStreak((prev) => {
         const next = prev + 1;
@@ -210,12 +193,10 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
       setCurrentStreak(0);
     }
 
-    // Auto advance after short review delay
     window.setTimeout(() => {
       if (currentIndex + 1 < questions.length) {
         setCurrentIndex((prev) => prev + 1);
       } else {
-        // Complete Quiz!
         const totalDuration = Math.round((Date.now() - startTimeRef.current) / 1000);
         const finalResult: MatchResult = {
           id: `match-${Date.now()}`,
@@ -247,6 +228,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
   }
 
   const progressPercent = ((currentIndex + 1) / questions.length) * 100;
+  const isRealPreview = previewSource === 'itunes' || previewSource === 'deezer';
 
   return (
     <main className="flex-grow flex flex-col px-4 md:px-16 py-4 md:py-8 max-w-7xl mx-auto w-full relative z-10 animate-in fade-in duration-200">
@@ -258,7 +240,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
             onClick={() => {
               soundEngine.playClick();
               soundEngine.stopCurrentAudio();
-              spotifyPlayer.pause();
+              audioPreview.stop();
               onExit('home');
             }}
             aria-label="Thoát trò chơi"
@@ -273,7 +255,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
               soundEngine.playClick();
               playCurrentMelody();
             }}
-            title="Nghe lại giai điệu"
+            title="Nghe lại"
             className="flex items-center justify-center w-10 h-10 rounded-full bg-[#e8e8e8] text-[#494551] hover:bg-[#e2e2e2] active:scale-95 transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-[20px]">replay</span>
@@ -283,9 +265,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
         {/* Progress Bar & Current Score */}
         <div className="flex-grow max-w-lg mx-2 md:mx-6">
           <div className="flex justify-between text-xs md:text-sm font-semibold text-[#494551] mb-1.5">
-            <span>
-              Câu {currentIndex + 1}/{questions.length}
-            </span>
+            <span>Câu {currentIndex + 1}/{questions.length}</span>
             <div className="flex items-center gap-2">
               {currentStreak > 1 && (
                 <span className="text-[#b70052] flex items-center gap-0.5 text-xs font-bold animate-bounce">
@@ -321,7 +301,9 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
           {currentQuestion.question}
         </h1>
         <p className="text-xs md:text-sm text-[#7a7582] mt-1.5">
-          Chọn đáp án chính xác nhất dựa trên giai điệu và kiến thức V-pop của bạn
+          {isRealPreview
+            ? `🎵 Đang phát bản xem trước thật từ ${previewSource === 'itunes' ? 'Apple Music' : 'Deezer'} — nghe và chọn đáp án!`
+            : 'Chọn đáp án chính xác nhất dựa trên giai điệu và kiến thức V-pop của bạn'}
         </p>
       </div>
 
@@ -336,9 +318,14 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
 
             {/* Scrim & Playing Indicator */}
             <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex flex-col items-center justify-center text-white pointer-events-none p-4">
-              <div className="flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full backdrop-blur-md border border-white/20">
-                {isSpotifyStreaming ? (
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#1db954] shrink-0 animate-pulse"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md border ${isRealPreview ? 'bg-black/60 border-[#1db954]/40' : 'bg-black/40 border-white/20'}`}>
+                {isRealPreview ? (
+                  /* Apple Music / Deezer icon */
+                  previewSource === 'itunes' ? (
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 animate-pulse" fill="white"><path d="M23.994 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026C4.786.07 4.043.17 3.34.428 2.067.945 1.134 1.8.557 3.048A7.497 7.497 0 00.09 5.19 50.149 50.149 0 000 6.125v11.749c.01.161.017.324.026.487.06 1.242.28 2.44.917 3.517.49.832 1.164 1.48 2.005 1.96.76.44 1.58.687 2.44.814.69.099 1.387.13 2.08.132h11.017c.764-.014 1.527-.07 2.28-.214.965-.185 1.857-.542 2.64-1.114 1.08-.788 1.81-1.822 2.147-3.09.145-.55.217-1.11.24-1.678.013-.262.02-.524.02-.786V6.124zm-7.477 9.957a.69.69 0 01-.69.69H8.173a.69.69 0 01-.69-.69v-.386a.69.69 0 01.69-.69h7.654a.69.69 0 01.69.69zm0-3.31a.69.69 0 01-.69.69H8.173a.69.69 0 01-.69-.69v-.387a.69.69 0 01.69-.69h7.654a.69.69 0 01.69.69zm0-3.31a.69.69 0 01-.69.69H8.173a.69.69 0 01-.69-.69v-.387a.69.69 0 01.69-.69h7.654a.69.69 0 01.69.69z"/></svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 fill-[#ff0092] animate-pulse"><path d="M11.996 0C5.373 0 0 5.373 0 11.997 0 18.625 5.373 24 11.996 24 18.625 24 24 18.625 24 11.997 24 5.373 18.625 0 11.996 0zm4.374 16.898a.71.71 0 01-.978.23 18.61 18.61 0 00-2.736-1.18 13.52 13.52 0 01-3.546-.43c-1.037-.267-1.96-.71-2.706-1.41a3.87 3.87 0 01-1.189-2.842c0-1.048.38-1.98 1.096-2.694.718-.716 1.638-1.078 2.688-1.078 1.024 0 1.95.358 2.668 1.065.718.707 1.1 1.637 1.1 2.682v.078c0 .267-.088.534-.223.756-.238.37-.638.608-1.083.608h-.018c-.44 0-.838-.237-1.075-.608a1.37 1.37 0 01-.224-.756v-.078c0-.5-.178-.92-.534-1.272a1.755 1.755 0 00-1.239-.505 1.74 1.74 0 00-1.225.49c-.35.326-.53.73-.53 1.22 0 .74.315 1.327.93 1.787.617.46 1.45.76 2.474.9a15.81 15.81 0 003.3.268 15.8 15.8 0 001.946-.178.71.71 0 01.824.562.696.696 0 01-.015.385z"/></svg>
+                  )
                 ) : (
                   <span
                     className={`material-symbols-outlined text-2xl ${
@@ -350,8 +337,8 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
                   </span>
                 )}
                 <span className="text-sm font-medium tracking-wide">
-                  {isSpotifyStreaming
-                    ? 'Đang phát từ Spotify Premium'
+                  {isRealPreview
+                    ? `Đang phát từ ${previewSource === 'itunes' ? 'Apple Music' : 'Deezer'}...`
                     : isPlayingMelody
                     ? 'Đang phát giai điệu...'
                     : 'Tạm dừng giai điệu'}
@@ -359,7 +346,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
               </div>
             </div>
 
-            {/* Quick Replay Floating Button on Visualizer */}
+            {/* Quick Replay Floating Button */}
             <button
               onClick={() => {
                 soundEngine.playClick();
@@ -372,7 +359,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
             </button>
           </div>
 
-          {/* Player Bar (Bottom of Card) */}
+          {/* Player Bar */}
           <div className="p-4 md:p-5 bg-white flex items-center justify-between border-t border-[#e2e2e2]">
             <div className="flex items-center gap-3">
               <button
@@ -380,6 +367,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
                   soundEngine.playClick();
                   if (isPlayingMelody) {
                     soundEngine.stopCurrentAudio();
+                    audioPreview.pause();
                     setIsPlayingMelody(false);
                   } else {
                     playCurrentMelody();
@@ -394,17 +382,25 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
 
               <div className="flex flex-col">
                 <span className="font-semibold text-sm text-[#1a1c1c]">
-                  {isAnswered ? currentQuestion.songTitle || 'Bản hit V-pop' : 'Giai điệu câu hỏi'}
+                  {isAnswered ? currentQuestion.songTitle || 'Bản hit V-pop' : 'Bản xem trước'}
                 </span>
                 <span className="text-xs text-[#7a7582]">
                   {isAnswered
                     ? `${currentQuestion.artist || ''} (${currentQuestion.releaseYear || 2023})`
-                    : `0:0${audioElapsed} / 0:15`}
+                    : isRealPreview
+                    ? `0:${String(audioElapsed).padStart(2, '0')} — preview thật`
+                    : `0:${String(audioElapsed).padStart(2, '0')} / 0:15`}
                 </span>
               </div>
             </div>
 
+            {/* Source badge */}
             <div className="flex items-center gap-2">
+              {isRealPreview && (
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${previewSource === 'itunes' ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white' : 'bg-[#ff0092] text-white'}`}>
+                  {previewSource === 'itunes' ? '🎵 Apple Music' : '🎵 Deezer'}
+                </span>
+              )}
               <button
                 onClick={() => {
                   soundEngine.playClick();
@@ -421,14 +417,13 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
         {/* Answer Choices (A, B, C, D) */}
         <div className="flex-1 flex flex-col justify-center gap-3.5">
           {currentQuestion.options.map((option, idx) => {
-            const letter = String.fromCharCode(65 + idx); // A, B, C, D
+            const letter = String.fromCharCode(65 + idx);
             let cardStyle = 'bg-white border-[#cbc4d2] hover:border-[#4f378a] hover:bg-[#f9f9f9] text-[#1a1c1c]';
             let badgeStyle = 'bg-[#e2e2e2] text-[#1a1c1c] group-hover:bg-[#4f378a] group-hover:text-white';
             let iconElement = null;
 
             if (isAnswered) {
               if (idx === currentQuestion.correctIndex) {
-                // Correct styling: Teal container
                 cardStyle = 'bg-[#006b61] border-[#005048] text-white shadow-md font-bold';
                 badgeStyle = 'bg-[#40f1dd] text-[#00201c]';
                 iconElement = (
@@ -440,7 +435,6 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
                   </span>
                 );
               } else if (selectedOption === idx) {
-                // Incorrect chosen
                 cardStyle = 'bg-[#ffdad6] border-[#ba1a1a] text-[#93000a]';
                 badgeStyle = 'bg-[#ba1a1a] text-white';
                 iconElement = (
@@ -470,11 +464,8 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
                   >
                     {letter}
                   </div>
-                  <span className="text-base md:text-lg font-medium leading-tight">
-                    {option}
-                  </span>
+                  <span className="text-base md:text-lg font-medium leading-tight">{option}</span>
                 </div>
-
                 {iconElement ? (
                   iconElement
                 ) : (
@@ -486,7 +477,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({
             );
           })}
 
-          {/* Explanation Box shown after answer */}
+          {/* Explanation Box */}
           {isAnswered && (
             <div className="p-4 rounded-2xl bg-[#e9ddff]/60 border border-[#cfbcff] text-xs md:text-sm text-[#4f378a] animate-in fade-in duration-200">
               <span className="font-bold mr-1">💡 Thông tin bài hát:</span>

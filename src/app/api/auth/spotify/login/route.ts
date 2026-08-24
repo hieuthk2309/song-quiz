@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
-const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'https://localhost:3000/api/auth/spotify/callback';
+const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'http://localhost:3000/api/auth/spotify/callback';
 
-// All scopes required for Spotify Web Playback SDK and user profile/playlists
 const SCOPES = [
-  'streaming',
-  'user-read-email',
-  'user-read-private',
-  'user-modify-playback-state',
-  'user-read-playback-state',
   'playlist-read-private',
   'playlist-read-collaborative',
   'user-library-read',
@@ -25,18 +19,17 @@ export async function GET(request: NextRequest) {
     scope: SCOPES,
     redirect_uri: REDIRECT_URI,
     state,
-    show_dialog: 'true', // ensure user gets prompt for all scopes
+    show_dialog: 'false',
   });
 
   const response = NextResponse.redirect(
     `https://accounts.spotify.com/authorize?${params.toString()}`
   );
 
-  // Store state in cookie for verification
   response.cookies.set('spotify_oauth_state', state, {
     httpOnly: true,
-    secure: false, // Allow on HTTP localhost
-    maxAge: 600, // 10 minutes
+    secure: false,
+    maxAge: 600,
     path: '/',
     sameSite: 'lax',
   });

@@ -280,7 +280,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     releaseYear: 2023,
     options: ['Grey D', 'Wren Evans', 'MCK', 'Captain Boy'],
     correctIndex: 1,
-    explanation: '"Từng Quen" nằm trong album "LoiChoi" của Wren Evans đã đứng đầu Apple Music & Spotify Việt Nam nhiều tuần liên tiếp.',
+    explanation: '"Từng Quen" nằm trong album "LoiChoi" của Wren Evans đã đứng đầu các bảng xếp hạng âm nhạc Việt Nam nhiều tuần liên tiếp.',
     melodyNotes: [
       { freq: 587.33, duration: 0.25 },
       { freq: 659.25, duration: 0.25 },

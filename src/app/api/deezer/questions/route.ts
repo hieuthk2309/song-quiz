@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchSpotifyCategoryQuestions, CATEGORY_SEARCH_CONFIGS } from '@/src/lib/spotify';
+import { fetchDeezerCategoryQuestions, CATEGORY_SEARCH_CONFIGS } from '@/src/lib/deezer';
 import { QUIZ_QUESTIONS as DEFAULT_QUESTIONS } from '@/src/data/quizData';
 
 export async function GET(request: NextRequest) {
@@ -8,19 +8,16 @@ export async function GET(request: NextRequest) {
   const categoryName = searchParams.get('categoryName') || undefined;
 
   try {
-    // ─── RANDOM MODE: pick 3 distinct random categories, 10 questions each ───
+    // ─── RANDOM MODE: pick 3 distinct random categories, combine questions ───
     if (categoryId === 'random') {
-      const allIds = CATEGORY_SEARCH_CONFIGS.map(c => c.id);
-      // Shuffle and pick 3 distinct categories
+      const allIds = CATEGORY_SEARCH_CONFIGS.map((c) => c.id);
       const shuffled = [...allIds].sort(() => 0.5 - Math.random());
       const picked = shuffled.slice(0, 3);
 
-      // Fetch questions from all 3 categories in parallel
       const results = await Promise.all(
-        picked.map(id => fetchSpotifyCategoryQuestions(id))
+        picked.map((id) => fetchDeezerCategoryQuestions(id)),
       );
 
-      // Collect up to 10 from each, then merge and shuffle
       let combined: any[] = [];
       for (const qs of results) {
         const shuffledQs = [...qs].sort(() => 0.5 - Math.random());
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest) {
       if (combined.length >= 4) {
         return NextResponse.json({
           success: true,
-          source: 'spotify-random',
+          source: 'deezer-random',
           randomCategories: picked,
           questions: combined,
         });
@@ -39,12 +36,12 @@ export async function GET(request: NextRequest) {
     }
 
     // ─── NORMAL CATEGORY MODE ───
-    const dynamicQuestions = await fetchSpotifyCategoryQuestions(categoryId, categoryName);
+    const dynamicQuestions = await fetchDeezerCategoryQuestions(categoryId, categoryName);
 
     if (dynamicQuestions && dynamicQuestions.length >= 4) {
       return NextResponse.json({
         success: true,
-        source: 'spotify',
+        source: 'deezer',
         questions: dynamicQuestions,
       });
     }
@@ -61,14 +58,14 @@ export async function GET(request: NextRequest) {
       questions: filtered,
     });
   } catch (error) {
-    console.error('API Error /api/spotify/questions:', error);
+    console.error('API Error /api/deezer/questions:', error);
     return NextResponse.json(
       {
         success: false,
         source: 'fallback',
         questions: DEFAULT_QUESTIONS,
       },
-      { status: 200 }
+      { status: 200 },
     );
   }
 }

@@ -7,10 +7,7 @@ interface HomeViewProps {
   user: UserProfile;
   categories?: QuizCategory[];
   isLoadingCategories?: boolean;
-  isSpotifyActive?: boolean;
-  spotifyUser?: { displayName: string; avatar: string | null } | null;
-  myPlaylists?: any[];
-  isLoadingPlaylists?: boolean;
+  isDeezerActive?: boolean;
   onNavigate: (view: ViewMode) => void;
   onStartQuiz: (categoryId: string) => void;
 }
@@ -19,10 +16,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   user,
   categories = DEFAULT_CATEGORIES,
   isLoadingCategories = false,
-  isSpotifyActive = true,
-  spotifyUser = null,
-  myPlaylists = [],
-  isLoadingPlaylists = false,
+  isDeezerActive = true,
   onNavigate,
   onStartQuiz,
 }) => {
@@ -35,9 +29,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
     onStartQuiz(selectedTopic);
   };
 
-  const filteredCategories = selectedFilter === 'all'
-    ? currentCategories
-    : currentCategories.filter(c => c.tag.toLowerCase() === selectedFilter.toLowerCase());
+  const filteredCategories =
+    selectedFilter === 'all'
+      ? currentCategories
+      : currentCategories.filter(
+          (c) => c.tag.toLowerCase() === selectedFilter.toLowerCase(),
+        );
 
   return (
     <div className="w-full flex flex-col pb-24 md:pb-16 animate-in fade-in duration-300">
@@ -60,7 +57,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start gap-4 text-white">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-[#4ffbe6] tracking-wider uppercase">
               <span className="material-symbols-outlined text-[16px]">headphones</span>
-              {isSpotifyActive ? 'Spotify Connected • V-Pop 2024' : 'V-Pop Master Quiz 2024'}
+              {isDeezerActive ? 'Deezer Music Engine • Live V-Pop 2024' : 'V-Pop Master Quiz 2024'}
             </div>
 
             <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight">
@@ -68,7 +65,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </h2>
 
             <p className="text-base sm:text-lg text-[#cfbcff] max-w-xl">
-              Thử thách kiến thức âm nhạc của bạn về những bản hit, nghệ sĩ và giai điệu đỉnh cao. Khám phá {isLoadingCategories ? 'hàng chục' : currentCategories.length} danh mục âm nhạc phong phú!
+              Thử thách kiến thức âm nhạc của bạn với hàng ngàn bài hát, bản hit và giai điệu đỉnh cao được đồng bộ từ thư viện Deezer. Khám phá {isLoadingCategories ? 'hàng chục' : currentCategories.length} thể loại âm nhạc phong phú!
             </p>
 
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3.5 pt-2">
@@ -107,17 +104,28 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div className="text-3xl md:text-4xl font-extrabold tracking-tight">
                 {user.highScore.toLocaleString()} pts
               </div>
-              <p className="text-xs text-[#cfbcff] mt-1">Cấp độ {user.level} • {user.correctAnswers} câu trả lời đúng</p>
+              <p className="text-xs text-[#cfbcff] mt-1">
+                Cấp độ {user.level} • {user.correctAnswers} câu trả lời đúng
+              </p>
 
               <div className="w-full mt-4 pt-4 border-t border-white/20 flex justify-around text-center text-xs">
                 <div>
-                  <span className="text-[#4ffbe6] font-bold text-base block">{user.totalGames}</span>
+                  <span className="text-[#4ffbe6] font-bold text-base block">
+                    {user.totalGames}
+                  </span>
                   <span className="text-[#e0d2ff]">Trận đã chơi</span>
                 </div>
                 <div className="border-r border-white/20" />
                 <div>
                   <span className="text-[#4ffbe6] font-bold text-base block">
-                    {user.totalGames > 0 ? Math.round((user.correctAnswers / (user.correctAnswers + user.wrongAnswers || 1)) * 100) : 100}%
+                    {user.totalGames > 0
+                      ? Math.round(
+                          (user.correctAnswers /
+                            (user.correctAnswers + user.wrongAnswers || 1)) *
+                            100,
+                        )
+                      : 100}
+                    %
                   </span>
                   <span className="text-[#e0d2ff]">Độ chính xác</span>
                 </div>
@@ -135,11 +143,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <span className="material-symbols-outlined text-[26px]">music_note</span>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#7a7582]">Chủ đề đang chọn</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#7a7582]">
+                Chủ đề đang chọn
+              </p>
               <h4 className="font-bold text-base md:text-lg text-[#1a1c1c]">
                 {isLoadingCategories
                   ? 'Đang tải danh mục...'
-                  : currentCategories.find((c) => c.id === selectedTopic)?.name || currentCategories[0]?.name || 'Hot Pop'}
+                  : currentCategories.find((c) => c.id === selectedTopic)?.name ||
+                    currentCategories[0]?.name ||
+                    'Hot V-Pop'}
               </h4>
             </div>
           </div>
@@ -157,7 +169,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 className="w-full appearance-none bg-[#f9f9f9] border border-[#cbc4d2] text-[#1a1c1c] font-medium text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#4f378a] focus:border-[#4f378a] transition-all cursor-pointer disabled:opacity-60"
               >
                 {isLoadingCategories ? (
-                  <option>Đang tải danh mục từ Spotify...</option>
+                  <option>Đang tải danh mục từ Deezer...</option>
                 ) : (
                   currentCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -191,11 +203,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold text-[#1a1c1c]">Danh mục bài hát</h3>
+              <h3 className="text-2xl md:text-3xl font-bold text-[#1a1c1c]">
+                Danh mục bài hát Deezer
+              </h3>
               {isLoadingCategories ? (
-                <span className="inline-flex items-center gap-1.5 bg-[#1db954]/15 text-[#1db954] text-xs font-bold px-3 py-1 rounded-full border border-[#1db954]/30 animate-pulse">
-                  <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
-                  Đang đồng bộ từ Spotify...
+                <span className="inline-flex items-center gap-1.5 bg-[#4f378a]/15 text-[#4f378a] text-xs font-bold px-3 py-1 rounded-full border border-[#4f378a]/30 animate-pulse">
+                  <span className="material-symbols-outlined text-[14px] animate-spin">
+                    sync
+                  </span>
+                  Đang đồng bộ từ Deezer API...
                 </span>
               ) : (
                 <span className="bg-[#e9ddff] text-[#4f378a] text-xs font-bold px-2.5 py-0.5 rounded-full">
@@ -203,28 +219,32 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 </span>
               )}
             </div>
-            <p className="text-sm text-[#494551] mt-1">Chọn lĩnh vực âm nhạc sở trường để bắt đầu thử thách</p>
+            <p className="text-sm text-[#494551] mt-1">
+              Chọn lĩnh vực âm nhạc sở trường để bắt đầu thử thách kiến thức
+            </p>
           </div>
 
           {/* Filter Pills */}
           <div className="flex flex-wrap gap-2">
-            {['all', 'popular', 'trending', 'niche', 'classic', 'special'].map((filter) => (
-              <button
-                key={filter}
-                disabled={isLoadingCategories}
-                onClick={() => {
-                  soundEngine.playClick();
-                  setSelectedFilter(filter);
-                }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-all cursor-pointer ${
-                  selectedFilter === filter
-                    ? 'bg-[#4f378a] text-white shadow-xs'
-                    : 'bg-white text-[#494551] border border-[#cbc4d2] hover:bg-[#f3f3f3]'
-                } ${isLoadingCategories ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {filter === 'all' ? 'Tất cả' : filter}
-              </button>
-            ))}
+            {['all', 'popular', 'trending', 'niche', 'classic', 'special'].map(
+              (filter) => (
+                <button
+                  key={filter}
+                  disabled={isLoadingCategories}
+                  onClick={() => {
+                    soundEngine.playClick();
+                    setSelectedFilter(filter);
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-all cursor-pointer ${
+                    selectedFilter === filter
+                      ? 'bg-[#4f378a] text-white shadow-xs'
+                      : 'bg-white text-[#494551] border border-[#cbc4d2] hover:bg-[#f3f3f3]'
+                  } ${isLoadingCategories ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {filter === 'all' ? 'Tất cả' : filter}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
@@ -277,15 +297,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 {/* Card Content */}
                 <div className="relative z-10 text-white flex flex-col">
                   <span
-                    className={`${category.tagBg || 'bg-[#4f378a]'} text-white text-xs font-semibold px-3 py-1 rounded-full mb-2.5 self-start shadow-xs`}
+                    className={`${
+                      category.tagBg || 'bg-[#4f378a]'
+                    } text-white text-xs font-semibold px-3 py-1 rounded-full mb-2.5 self-start shadow-xs`}
                   >
                     {category.tag}
                   </span>
                   <h4 className="text-xl font-bold tracking-tight">{category.name}</h4>
-                  <p className="text-xs text-[#e2e2e2]/80 mt-1 line-clamp-2">{category.description}</p>
+                  <p className="text-xs text-[#e2e2e2]/80 mt-1 line-clamp-2">
+                    {category.description}
+                  </p>
                   <div className="mt-3 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-[#cfbcff]">
                     <span className="flex items-center gap-1.5 font-medium">
-                      <span className="material-symbols-outlined text-[16px]">{category.icon || 'music_note'}</span>
+                      <span className="material-symbols-outlined text-[16px]">
+                        {category.icon || 'music_note'}
+                      </span>
                       {category.questionCount}+ Câu hỏi
                     </span>
                     <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform text-[#4ffbe6]">
@@ -299,88 +325,33 @@ export const HomeView: React.FC<HomeViewProps> = ({
         )}
       </section>
 
-      {/* My Spotify Playlists Section */}
-      {!spotifyUser ? (
-        <section className="max-w-7xl mx-auto px-4 md:px-16 pb-6 w-full">
-          <div className="bg-gradient-to-r from-[#1db954]/15 to-[#191414]/10 border border-[#1db954]/30 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-[#1db954] flex items-center justify-center shrink-0">
-                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-              </div>
-              <div>
-                <p className="font-semibold text-[#1a1c1c] text-sm">Kết nối Spotify của bạn</p>
-                <p className="text-xs text-[#494551] mt-0.5">Đăng nhập để dùng playlist cá nhân làm bộ câu hỏi quiz</p>
-              </div>
+      {/* Deezer Music Integration Feature Banner */}
+      <section className="max-w-7xl mx-auto px-4 md:px-16 pb-6 w-full">
+        <div className="bg-gradient-to-r from-[#4f378a]/15 via-[#b70052]/10 to-[#005148]/15 border border-[#4f378a]/20 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-[#4f378a] flex items-center justify-center shrink-0 shadow-md text-white">
+              <span className="material-symbols-outlined text-[26px]">graphic_eq</span>
             </div>
-            <a
-              id="btn-spotify-login"
-              href="/api/auth/spotify/login"
-              className="shrink-0 bg-[#1db954] hover:bg-[#17a349] text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-sm"
+            <div>
+              <p className="font-bold text-[#1a1c1c] text-sm">
+                Thư viện âm nhạc Deezer API
+              </p>
+              <p className="text-xs text-[#494551] mt-0.5">
+                Âm thanh preview 30s chất lượng cao trực tiếp từ Deezer • Tự động tạo câu hỏi trắc nghiệm thông minh
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleQuickPlay()}
+              className="shrink-0 bg-[#4f378a] hover:bg-[#6750a4] text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-              Đăng nhập Spotify
-            </a>
+              <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+              Chơi ngay
+            </button>
           </div>
-        </section>
-      ) : (
-        <section className="max-w-7xl mx-auto px-4 md:px-16 pb-8 w-full">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              {spotifyUser.avatar && (
-                <img src={spotifyUser.avatar} alt={spotifyUser.displayName} className="w-8 h-8 rounded-full object-cover border-2 border-[#1db954]" />
-              )}
-              <div>
-                <h3 className="text-lg font-bold text-[#1a1c1c]">Playlist của tôi</h3>
-                <p className="text-xs text-[#494551]">{spotifyUser.displayName} • {myPlaylists.length} playlist</p>
-              </div>
-            </div>
-            <a href="/api/auth/spotify/login" className="text-xs text-[#1db954] hover:underline flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px]">refresh</span>
-              Cập nhật
-            </a>
-          </div>
-
-          {isLoadingPlaylists ? (
-            <div className="flex items-center justify-center py-10 gap-3 text-[#494551]">
-              <span className="material-symbols-outlined animate-spin text-[#1db954]">progress_activity</span>
-              Đang tải danh sách playlist...
-            </div>
-          ) : myPlaylists.length === 0 ? (
-            <div className="text-center py-8 text-[#7a7582] text-sm">
-              Không tìm thấy playlist nào (cần ít nhất 4 bài hát)
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              {myPlaylists.map((pl) => (
-                <div
-                  key={pl.id}
-                  onClick={() => {
-                    soundEngine.playClick();
-                    onStartQuiz(`playlist-${pl.id}`);
-                  }}
-                  className="group relative overflow-hidden rounded-2xl bg-white border border-[#e2e2e2] cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 aspect-square flex flex-col justify-end"
-                >
-                  {pl.cover ? (
-                    <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" style={{ backgroundImage: `url('${pl.cover}')` }} />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#1db954] to-[#191414] flex items-center justify-center">
-                      <span className="material-symbols-outlined text-white text-[40px]">queue_music</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#191414]/90 via-[#191414]/40 to-transparent" />
-                  <div className="relative z-10 p-3 text-white">
-                    <p className="font-bold text-sm leading-tight line-clamp-2">{pl.name}</p>
-                    <p className="text-xs text-[#1db954] mt-0.5 font-medium">{pl.totalTracks} bài</p>
-                  </div>
-                  <div className="absolute top-2 right-2 bg-[#1db954] text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow">
-                    <span className="material-symbols-outlined text-[16px]">play_arrow</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Multiplayer Challenge Highlight */}
       <section className="max-w-7xl mx-auto px-4 md:px-16 pb-12 w-full">
@@ -414,7 +385,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
               }}
               className="flex-1 md:flex-none bg-white text-[#4f378a] hover:bg-[#f3f3f3] font-semibold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+              <span className="material-symbols-outlined text-[20px]">
+                qr_code_scanner
+              </span>
               Vào phòng
             </button>
           </div>

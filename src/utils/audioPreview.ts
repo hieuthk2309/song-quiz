@@ -1,6 +1,6 @@
 /**
  * audioPreview.ts
- * Manages 30-second MP3 audio previews fetched from iTunes/Deezer.
+ * Manages 30-second MP3 audio previews fetched from Deezer API.
  * Uses HTML5 Audio API — no extra dependencies needed.
  */
 
@@ -8,11 +8,13 @@ type PreviewState = 'idle' | 'loading' | 'playing' | 'paused' | 'error' | 'fallb
 
 type PreviewResult = {
   success: boolean;
-  source?: 'itunes' | 'deezer';
+  source?: 'deezer' | 'itunes';
   previewUrl?: string;
   trackName?: string;
   artistName?: string;
   artworkUrl?: string;
+  deezerId?: number;
+  deezerLink?: string;
 };
 
 type StateChangeListener = (state: PreviewState, source?: string) => void;
@@ -20,10 +22,12 @@ type StateChangeListener = (state: PreviewState, source?: string) => void;
 class AudioPreviewManager {
   private audio: HTMLAudioElement | null = null;
   private state: PreviewState = 'idle';
-  private source: 'itunes' | 'deezer' | null = null;
+  private source: 'deezer' | 'itunes' | null = null;
   private listeners: StateChangeListener[] = [];
-  // Simple in-memory cache: key = "title|artist" → {url, source} or null
-  private cache: Map<string, { url: string; source: 'itunes' | 'deezer' } | null> = new Map();
+  private clipTimer: number | null = null;
+  private timeUpdateHandler: (() => void) | null = null;
+  // Simple in-memory cache: key = "title|artist" -> {url, source} or null
+  private cache: Map<string, { url: string; source: 'deezer' | 'itunes' } | null> = new Map();
 
   subscribe(cb: StateChangeListener) {
     this.listeners.push(cb);
@@ -33,17 +37,30 @@ class AudioPreviewManager {
     };
   }
 
-  private setState(s: PreviewState, src?: 'itunes' | 'deezer' | null) {
+  private setState(s: PreviewState, src?: 'deezer' | 'itunes' | null) {
     this.state = s;
     if (src !== undefined) this.source = src ?? null;
     this.listeners.forEach((l) => l(s, this.source ?? undefined));
   }
 
-  getState() { return this.state; }
-  getSource(): 'itunes' | 'deezer' | null { return this.source; }
+  getState() {
+    return this.state;
+  }
+
+  getSource(): 'deezer' | 'itunes' | null {
+    return this.source;
+  }
 
   /** Stop current preview immediately */
   stop() {
+    if (this.clipTimer !== null) {
+      window.clearTimeout(this.clipTimer);
+      this.clipTimer = null;
+    }
+    if (this.audio && this.timeUpdateHandler) {
+      this.audio.removeEventListener('timeupdate', this.timeUpdateHandler);
+      this.timeUpdateHandler = null;
+    }
     if (this.audio) {
       this.audio.pause();
       this.audio.src = '';
@@ -65,14 +82,15 @@ class AudioPreviewManager {
   }
 
   /**
-   * Fetch preview URL from /api/spotify/preview and play it.
+   * Fetch preview URL from /api/deezer/preview and play it.
    * Returns 'playing' if a preview was found, 'fallback' if not.
    */
   async playPreview(
     title: string,
     artist: string,
     startAtMs: number = 0,
-    onEnd?: () => void
+    onEnd?: () => void,
+    clipSeconds: number = 15,
   ): Promise<'playing' | 'fallback'> {
     // Stop any existing audio first
     this.stop();
@@ -82,17 +100,16 @@ class AudioPreviewManager {
     let cached = this.cache.get(cacheKey);
 
     if (cached === undefined) {
-      // Not cached — fetch
+      // Not cached — fetch from Deezer preview endpoint
       try {
         const res = await fetch(
-          `/api/spotify/preview?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`
+          `/api/deezer/preview?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`,
         );
         if (res.ok) {
           const data: PreviewResult = await res.json();
           if (data.success && data.previewUrl && data.source) {
             cached = { url: data.previewUrl, source: data.source };
             this.cache.set(cacheKey, cached);
-            console.log(`[Preview] Found via ${data.source}: ${data.trackName} – ${data.artistName}`);
           } else {
             cached = null;
             this.cache.set(cacheKey, null);
@@ -102,7 +119,7 @@ class AudioPreviewManager {
           this.cache.set(cacheKey, null);
         }
       } catch (err) {
-        console.warn('[Preview] Fetch error:', err);
+        console.warn('[Preview] Deezer fetch error:', err);
         cached = null;
         this.cache.set(cacheKey, null);
       }
@@ -123,19 +140,43 @@ class AudioPreviewManager {
       audio.volume = 0.85;
       audio.preload = 'auto';
 
-      audio.addEventListener('canplay', () => {
-        if (startAtMs > 0 && isFinite(audio.duration)) {
-          audio.currentTime = startAtMs / 1000;
-        }
-        audio.play().then(() => {
-          this.setState('playing', previewSource);
-          resolve('playing');
-        }).catch((err) => {
-          console.warn('[Preview] Autoplay blocked:', err);
-          this.setState('fallback', null);
-          resolve('fallback');
-        });
-      }, { once: true });
+      audio.addEventListener(
+        'canplay',
+        () => {
+          if (startAtMs > 0 && isFinite(audio.duration)) {
+            audio.currentTime = startAtMs / 1000;
+          }
+          audio
+            .play()
+            .then(() => {
+              const startedAt = audio.currentTime;
+              const clip = Math.max(1, clipSeconds);
+              let clipped = false;
+              const finishClip = () => {
+                if (clipped) return;
+                clipped = true;
+                this.stop();
+                onEnd?.();
+              };
+
+              this.timeUpdateHandler = () => {
+                if (audio.currentTime - startedAt >= clip) finishClip();
+              };
+              audio.addEventListener('timeupdate', this.timeUpdateHandler);
+
+              this.clipTimer = window.setTimeout(finishClip, clip * 1000);
+
+              this.setState('playing', previewSource);
+              resolve('playing');
+            })
+            .catch((err) => {
+              console.warn('[Preview] Autoplay blocked:', err);
+              this.setState('fallback', null);
+              resolve('fallback');
+            });
+        },
+        { once: true },
+      );
 
       audio.addEventListener('ended', () => {
         this.setState('idle');

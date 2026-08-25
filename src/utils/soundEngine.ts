@@ -165,6 +165,70 @@ class SoundEngine {
     }
   }
 
+  // Play urgent high-frequency tick for last 5 seconds (louder + higher pitch)
+  public playUrgentTick() {
+    this.init();
+    if (this.isMuted) return;
+    try {
+      if (!this.ctx || !this.masterGain) return;
+
+      // Tick
+      const osc1 = this.ctx.createOscillator();
+      const gain1 = this.ctx.createGain();
+      osc1.type = 'square';
+      osc1.frequency.setValueAtTime(1200, this.ctx.currentTime);
+      gain1.gain.setValueAtTime(0.22, this.ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.035);
+      osc1.connect(gain1);
+      gain1.connect(this.masterGain);
+      osc1.start();
+      osc1.stop(this.ctx.currentTime + 0.035);
+
+      // Subtle tock echo
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(600, this.ctx.currentTime + 0.04);
+      gain2.gain.setValueAtTime(0.10, this.ctx.currentTime + 0.04);
+      gain2.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+      osc2.connect(gain2);
+      gain2.connect(this.masterGain);
+      osc2.start(this.ctx.currentTime + 0.04);
+      osc2.stop(this.ctx.currentTime + 0.09);
+    } catch (e) {
+      console.warn('Audio play error', e);
+    }
+  }
+
+  // Play ascending chime when Blind Audio phase lifts (3s reveal)
+  public playBlindReveal() {
+    this.init();
+    if (this.isMuted) return;
+    try {
+      if (!this.ctx || !this.masterGain) return;
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        const startTime = this.ctx!.currentTime + idx * 0.06;
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0.22, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+
+        osc.start(startTime);
+        osc.stop(startTime + 0.18);
+      });
+    } catch (e) {
+      console.warn('Audio play error', e);
+    }
+  }
+
   /**
    * Generates a unique, harmonious pentatonic melody sequence for any song based on its title and artist.
    */

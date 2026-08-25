@@ -14,7 +14,7 @@ import {
 } from '../../hooks/useGameplayLoop';
 
 interface TensionBarProps {
-  elapsed: number;
+  remainingTime: number;
   totalTime: number;
   isWarning: boolean;
   isCritical: boolean;
@@ -32,15 +32,14 @@ const GREEN: [number, number, number] = [45, 213, 91];
 const YELLOW: [number, number, number] = [245, 197, 24];
 const RED: [number, number, number] = [255, 59, 48];
 
-const TensionBar: React.FC<TensionBarProps> = ({ elapsed, totalTime, isWarning, isCritical }) => {
-  const remaining = Math.max(0, totalTime - elapsed);
-  const pct = Math.max(0, Math.min(100, (remaining / totalTime) * 100));
+const TensionBar: React.FC<TensionBarProps> = ({ remainingTime, totalTime, isWarning, isCritical }) => {
+  const pct = Math.max(0, Math.min(100, (remainingTime / totalTime) * 100));
 
   let fillColor: string;
-  if (elapsed < 7) {
-    fillColor = lerpColor(GREEN, YELLOW, elapsed / 7);
-  } else if (elapsed < 12) {
-    fillColor = lerpColor(YELLOW, RED, (elapsed - 7) / 5);
+  if (remainingTime >= 10) {
+    fillColor = lerpColor(GREEN, YELLOW, (15 - remainingTime) / 5);
+  } else if (remainingTime >= 5) {
+    fillColor = lerpColor(YELLOW, RED, (10 - remainingTime) / 5);
   } else {
     fillColor = `rgb(${RED[0]}, ${RED[1]}, ${RED[2]})`;
   }
@@ -89,6 +88,8 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
     audioElapsed,
     isCritical,
     isWarning,
+    remainingTime,
+    questionPhase,
     handleAnswer,
     playCurrentMelody,
     pauseMelody,
@@ -147,6 +148,16 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
           <p className="text-sm font-medium text-[#7a7582]">Đang tải câu hỏi...</p>
         </div>
       </div>
+    );
+  }
+
+  if (questionPhase === 'reading') {
+    return (
+      <main className="flex-grow flex items-center justify-center px-4 py-12 text-center">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#1a1c1c] max-w-3xl leading-snug">
+          {currentQuestion.question}
+        </h1>
+      </main>
     );
   }
 
@@ -221,7 +232,8 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
 
       <div className="w-full mb-4 md:mb-6 px-0.5">
         <TensionBar
-          elapsed={elapsed}
+          key={currentQuestion.id}
+          remainingTime={remainingTime}
           totalTime={QUESTION_TIME_LIMIT}
           isWarning={isWarning}
           isCritical={isCritical}

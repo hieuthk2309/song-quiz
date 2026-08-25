@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
     "@google/generative-ai": "^0.24.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",

@@ -412,7 +412,7 @@ export async function fetchDeezerCategoryQuestions(
     const generatedQuestions: QuizQuestion[] = [];
     const tracksPool = shuffledTracks;
 
-    tracksPool.slice(0, 25).forEach((track, index) => {
+    tracksPool.slice(0, 50).forEach((track, index) => {
       const correctArtist = track.artist?.name || 'Unknown Artist';
       const rawTitle = track.title_short || track.title || 'Unknown Track';
       const cleanName = cleanTrackName(rawTitle) || rawTitle;

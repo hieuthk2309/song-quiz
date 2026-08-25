@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import { QuizQuestion, MatchResult } from '../types';
 import { soundEngine } from '../utils/soundEngine';
 import { audioPreview } from '../utils/audioPreview';
-import { fetchQuizOptionsFromAI, type AiQuestionType } from '../lib/quizAiClient';
 
 export const QUESTION_TIME_LIMIT = 15;
 export const ANSWER_REVEAL_AT = 4;
@@ -20,14 +19,9 @@ export function calcDecayingScore(elapsedSeconds: number): number {
   return Math.max(0, Math.min(SCORE_MAX, Math.round(score)));
 }
 
-function promptTypeToAi(promptType: QuizQuestion['promptType']): AiQuestionType {
-  return promptType === 'artist' ? 'ARTIST_NAME' : 'SONG_NAME';
-}
-
 interface UseGameplayLoopArgs {
   questions: QuizQuestion[];
   currentIndex: number;
-  setQuestions: Dispatch<SetStateAction<QuizQuestion[]>>;
   setCurrentIndex: Dispatch<SetStateAction<number>>;
   onFinishGame: (result: MatchResult) => void;
 }
@@ -35,7 +29,6 @@ interface UseGameplayLoopArgs {
 export function useGameplayLoop({
   questions,
   currentIndex,
-  setQuestions,
   setCurrentIndex,
   onFinishGame,
 }: UseGameplayLoopArgs) {
@@ -62,7 +55,6 @@ export function useGameplayLoop({
   const blindTimerRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const urgentTickRef = useRef<number | null>(null);
-  const enhancedIdsRef = useRef<Set<string>>(new Set());
 
   const currentQuestion = questions[currentIndex];
   const isCritical = elapsed >= 12;
@@ -283,44 +275,7 @@ export function useGameplayLoop({
       stopRafScoreLoop();
       soundEngine.stopCurrentAudio();
     };
-    // Restart only when the question index changes — not when AI swaps options.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, currentQuestion?.id]);
-
-  useEffect(() => {
-    if (!currentQuestion?.songTitle || !currentQuestion.artist) return;
-    let cancelled = false;
-    const q = currentQuestion;
-    const idx = currentIndex;
-
-    const enhance = async (targetIndex: number, target: QuizQuestion) => {
-      if (!target.songTitle || !target.artist) return;
-      if (enhancedIdsRef.current.has(target.id)) return;
-      const result = await fetchQuizOptionsFromAI(
-        { title: target.songTitle, artist: target.artist },
-        promptTypeToAi(target.promptType),
-      );
-      if (cancelled || !result) return;
-      if (targetIndex === currentIndexRef.current) {
-        if (isAnsweredRef.current) return;
-        const elapsedNow = (Date.now() - questionStartRef.current) / 1000;
-        if (elapsedNow >= ANSWER_REVEAL_AT) return;
-      }
-      enhancedIdsRef.current.add(target.id);
-      setQuestions((prev) =>
-        prev.map((item, i) =>
-          i === targetIndex ? { ...item, options: result.options, correctIndex: result.correctIndex } : item,
-        ),
-      );
-    };
-
-    enhance(idx, q);
-    const next = questions[idx + 1];
-    if (next) enhance(idx + 1, next);
-
-    return () => {
-      cancelled = true;
-    };
+    // Restart only when the question index changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, currentQuestion?.id]);
 

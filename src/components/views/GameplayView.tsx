@@ -96,7 +96,6 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
   } = useGameplayLoop({
     questions,
     currentIndex,
-    setQuestions,
     setCurrentIndex,
     onFinishGame,
   });
@@ -116,7 +115,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
           const data = await res.json();
           if (data.success && data.questions && data.questions.length >= 4 && isMounted) {
             const shuffledApi = [...data.questions].sort(() => Math.random() - 0.5);
-            const limit = category === 'random' ? 30 : 20;
+            const limit = 50;
             setQuestions(shuffledApi.slice(0, limit));
             resetMatchStats();
             return;
@@ -127,7 +126,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
       }
 
       if (isMounted) {
-        setQuestions(shuffledDefault.slice(0, 20));
+        setQuestions(shuffledDefault.slice(0, 50));
         resetMatchStats();
       }
     }

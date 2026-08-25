@@ -80,15 +80,10 @@ export function App() {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [lastMatchResult, setLastMatchResult] = useState<MatchResult | null>(null);
 
-  // Dynamic Spotify Categories
+  // Dynamic Deezer Categories
   const [categories, setCategories] = useState<QuizCategory[]>(DEFAULT_CATEGORIES);
   const [isLoadingCategories, setIsLoadingCategories] = useState<boolean>(true);
-  const [isSpotifyActive, setIsSpotifyActive] = useState<boolean>(false);
-
-  // Spotify OAuth User Playlists
-  const [spotifyUser, setSpotifyUser] = useState<{ displayName: string; avatar: string | null } | null>(null);
-  const [myPlaylists, setMyPlaylists] = useState<any[]>([]);
-  const [isLoadingPlaylists, setIsLoadingPlaylists] = useState<boolean>(false);
+  const [isDeezerActive, setIsDeezerActive] = useState<boolean>(false);
 
   // User Profile State with local storage persistence fallback
   const [user, setUser] = useState<UserProfile>(defaultUser);
@@ -96,72 +91,32 @@ export function App() {
   // History matches state
   const [matchHistory, setMatchHistory] = useState<MatchResult[]>(defaultHistory);
 
-  // Fetch dynamic categories from Spotify API Route
+  // Fetch dynamic categories from Deezer API Route
   useEffect(() => {
     async function loadCategories() {
       setIsLoadingCategories(true);
       try {
-        const res = await fetch('/api/spotify/categories');
+        const res = await fetch('/api/deezer/categories');
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.categories && data.categories.length > 0) {
             setCategories(data.categories);
-            setIsSpotifyActive(data.source === 'spotify');
+            setIsDeezerActive(data.source === 'deezer');
             return;
           }
         }
         // Fallback to default catalog if API response is invalid or empty
         setCategories(DEFAULT_CATEGORIES);
-        setIsSpotifyActive(false);
+        setIsDeezerActive(false);
       } catch (err) {
-        console.warn('Could not fetch Spotify categories, using fallback catalog.', err);
+        console.warn('Could not fetch Deezer categories, using fallback catalog.', err);
         setCategories(DEFAULT_CATEGORIES);
-        setIsSpotifyActive(false);
+        setIsDeezerActive(false);
       } finally {
         setIsLoadingCategories(false);
       }
     }
     loadCategories();
-  }, []);
-
-  // Check Spotify OAuth status and load user playlists
-  useEffect(() => {
-    async function checkSpotifyAuth() {
-      try {
-        // Check if spotify_user cookie exists (client-readable)
-        const cookieVal = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('spotify_user='));
-        if (!cookieVal) return;
-
-        const userData = JSON.parse(decodeURIComponent(cookieVal.split('=').slice(1).join('=')));
-        setSpotifyUser({ displayName: userData.displayName, avatar: userData.avatar });
-
-        // Load user playlists
-        setIsLoadingPlaylists(true);
-        const res = await fetch('/api/spotify/my-playlists', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.playlists) {
-            setMyPlaylists(data.playlists.filter((pl: any) => pl.totalTracks >= 4));
-          }
-        } else if (res.status === 401) {
-          // Not authenticated, clear user state
-          setSpotifyUser(null);
-        }
-      } catch (err) {
-        console.warn('Could not load Spotify user playlists:', err);
-      } finally {
-        setIsLoadingPlaylists(false);
-      }
-    }
-
-    // Also check if redirected back from Spotify with ?spotify_connected=1
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('spotify_connected') === '1') {
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-    checkSpotifyAuth();
   }, []);
 
   // Load from localStorage on client mount
@@ -278,10 +233,7 @@ export function App() {
             user={user}
             categories={categories}
             isLoadingCategories={isLoadingCategories}
-            isSpotifyActive={isSpotifyActive}
-            spotifyUser={spotifyUser}
-            myPlaylists={myPlaylists}
-            isLoadingPlaylists={isLoadingPlaylists}
+            isDeezerActive={isDeezerActive}
             onNavigate={(view) => setCurrentView(view)}
             onStartQuiz={handleStartQuiz}
           />

@@ -14,19 +14,23 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'i.scdn.co',
+        hostname: 'api.deezer.com',
       },
       {
         protocol: 'https',
-        hostname: 'mosaic.scdn.co',
+        hostname: 'e-cdns-images.dzcdn.net',
       },
       {
         protocol: 'https',
-        hostname: '**.scdn.co',
+        hostname: 'cdn-images.dzcdn.net',
       },
       {
         protocol: 'https',
-        hostname: '**.spotifycdn.com',
+        hostname: 'cdns-images.dzcdn.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.dzcdn.net',
       },
     ],
   },

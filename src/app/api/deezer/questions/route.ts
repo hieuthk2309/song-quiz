@@ -3,6 +3,7 @@ import { fetchDeezerCategoryQuestions, CATEGORY_SEARCH_CONFIGS } from '@/src/lib
 import { QUIZ_QUESTIONS as DEFAULT_QUESTIONS } from '@/src/data/quizData';
 import { enrichQuestionsWithGemini } from '@/src/lib/geminiQuizGenerator';
 import type { QuizQuestion } from '@/src/types';
+import { fetchZingMp3Questions } from '@/src/lib/zingmp3';
 
 export const maxDuration = 60;
 
@@ -12,6 +13,13 @@ export async function GET(request: NextRequest) {
   const categoryName = searchParams.get('categoryName') || undefined;
 
   try {
+    if (categoryId === 'zingmp3-2022') {
+      const questions = await fetchZingMp3Questions();
+      if (questions.length >= 4) {
+        return NextResponse.json({ success: true, source: 'zingmp3', questions });
+      }
+    }
+
     if (categoryId === 'random') {
       const allIds = CATEGORY_SEARCH_CONFIGS.map((c) => c.id);
       const shuffled = [...allIds].sort(() => 0.5 - Math.random());

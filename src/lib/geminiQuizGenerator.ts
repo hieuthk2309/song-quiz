@@ -59,13 +59,15 @@ CRITICAL RULE: At least ONE of the 3 distractors MUST be Rule 5 (A related real 
 3. Add OR remove exactly 1 word; the result must remain grammatically sensible.
 4. Tweak Vietnamese diacritics/tones of exactly 1 word to create a different meaning.
 5. A related REAL Vietnamese song title (by the same artist, same era, or same genre).
+6. Make a title more meaningful than the real title.
 
 ARTIST_NAME ("Ai hát bài này?"):
 Create 3 plausible artist-credit distractors.
 CRITICAL RULE: At least ONE of the 3 distractors MUST be Rule 2 (A related real artist).
-1. If the credit is a duet/feat (e.g., A & B), keep 1 correct artist and replace the other with a different famous Vietnamese artist (e.g., A & C).
-2. Pick a related REAL artist in the same genre/era (V-Pop, rap Việt, indie, etc.).
-3. Spoof the artist name slightly so it sounds funny but still meaningful.
+1. If the credit is a duet/feat (e.g., A & B), keep 1 correct artist and replace the other with a different famous artist of the same nationality real artist (e.g., A & C).
+2. Pick a same voice artist with REAL artist. 
+3. Pick a related REAL artist in the same genre/era.
+4. Spoof the artist name slightly so it sounds funny but still meaningful but only the international artist (this not for vietnamese artist).
 
 HARD OUTPUT RULES:
 - Return ONLY a JSON array of objects. No markdown, no code fences, no commentary.

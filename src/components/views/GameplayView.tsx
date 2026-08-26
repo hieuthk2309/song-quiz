@@ -14,7 +14,7 @@ import {
 } from '../../hooks/useGameplayLoop';
 
 interface TensionBarProps {
-  elapsed: number;
+  remainingTime: number;
   totalTime: number;
   isWarning: boolean;
   isCritical: boolean;
@@ -32,15 +32,14 @@ const GREEN: [number, number, number] = [45, 213, 91];
 const YELLOW: [number, number, number] = [245, 197, 24];
 const RED: [number, number, number] = [255, 59, 48];
 
-const TensionBar: React.FC<TensionBarProps> = ({ elapsed, totalTime, isWarning, isCritical }) => {
-  const remaining = Math.max(0, totalTime - elapsed);
-  const pct = Math.max(0, Math.min(100, (remaining / totalTime) * 100));
+const TensionBar: React.FC<TensionBarProps> = ({ remainingTime, totalTime, isWarning, isCritical }) => {
+  const pct = Math.max(0, Math.min(100, (remainingTime / totalTime) * 100));
 
   let fillColor: string;
-  if (elapsed < 7) {
-    fillColor = lerpColor(GREEN, YELLOW, elapsed / 7);
-  } else if (elapsed < 12) {
-    fillColor = lerpColor(YELLOW, RED, (elapsed - 7) / 5);
+  if (remainingTime >= 10) {
+    fillColor = lerpColor(GREEN, YELLOW, (15 - remainingTime) / 5);
+  } else if (remainingTime >= 5) {
+    fillColor = lerpColor(YELLOW, RED, (10 - remainingTime) / 5);
   } else {
     fillColor = `rgb(${RED[0]}, ${RED[1]}, ${RED[2]})`;
   }
@@ -89,6 +88,8 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
     audioElapsed,
     isCritical,
     isWarning,
+    remainingTime,
+    questionPhase,
     handleAnswer,
     playCurrentMelody,
     pauseMelody,
@@ -150,8 +151,19 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
     );
   }
 
+  if (questionPhase === 'reading') {
+    return (
+      <main className="flex-grow flex items-center justify-center px-4 py-12 text-center">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#1a1c1c] max-w-3xl leading-snug">
+          {currentQuestion.question}
+        </h1>
+      </main>
+    );
+  }
+
   const progressPercent = ((currentIndex + 1) / questions.length) * 100;
-  const isRealPreview = previewSource === 'itunes' || previewSource === 'deezer';
+  const isRealPreview = previewSource === 'itunes' || previewSource === 'deezer' || previewSource === 'zingmp3';
+  const previewSourceName = previewSource === 'itunes' ? 'Apple Music' : previewSource === 'zingmp3' ? 'Zing MP3' : 'Deezer';
   const revealIn = Math.max(0, Math.ceil(ANSWER_REVEAL_AT - elapsed));
 
   return (
@@ -221,7 +233,8 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
 
       <div className="w-full mb-4 md:mb-6 px-0.5">
         <TensionBar
-          elapsed={elapsed}
+          key={currentQuestion.id}
+          remainingTime={remainingTime}
           totalTime={QUESTION_TIME_LIMIT}
           isWarning={isWarning}
           isCritical={isCritical}
@@ -260,7 +273,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
           {isBlind
             ? `🙈 Nghe trước — đáp án hiện đúng giây thứ ${ANSWER_REVEAL_AT}!`
             : isRealPreview
-            ? `🎵 Đang phát bản xem trước ${PREVIEW_SECONDS}s từ ${previewSource === 'itunes' ? 'Apple Music' : 'Deezer'} — nghe và chọn đáp án!`
+            ? `🎵 Đang phát bản xem trước ${PREVIEW_SECONDS}s từ ${previewSourceName} — nghe và chọn đáp án!`
             : 'Chọn đáp án chính xác nhất dựa trên giai điệu và kiến thức V-pop của bạn'}
         </p>
       </div>
@@ -298,7 +311,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
                 )}
                 <span className="text-sm font-medium tracking-wide">
                   {isRealPreview
-                    ? `Đang phát từ ${previewSource === 'itunes' ? 'Apple Music' : 'Deezer'}...`
+                    ? `Đang phát từ ${previewSourceName}...`
                     : isPlayingMelody
                     ? 'Đang phát giai điệu...'
                     : 'Tạm dừng giai điệu'}
@@ -361,10 +374,12 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
                   className={`text-xs px-2 py-1 rounded-full font-medium ${
                     previewSource === 'itunes'
                       ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+                      : previewSource === 'zingmp3'
+                      ? 'bg-[#006b61] text-white'
                       : 'bg-[#ff0092] text-white'
                   }`}
                 >
-                  {previewSource === 'itunes' ? '🎵 Apple Music' : '🎵 Deezer'}
+                  {previewSource === 'itunes' ? '🎵 Apple Music' : previewSource === 'zingmp3' ? '🎵 Zing MP3' : '🎵 Deezer'}
                 </span>
               )}
               <button

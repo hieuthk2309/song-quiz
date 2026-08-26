@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import { QuizQuestion, MatchResult } from '../types';
 import { soundEngine } from '../utils/soundEngine';
 import { audioPreview } from '../utils/audioPreview';
+import { playQuestionIntroAudio, stopQuestionIntroAudio } from '../utils/questionIntroAudio';
 
 export const QUESTION_TIME_LIMIT = 15;
 export const ANSWER_REVEAL_AT = 4;
 export const SCORE_MAX = 1000;
 export const PREVIEW_SECONDS = 15;
+export type QuestionPhase = 'reading' | 'blind' | 'ready';
 
 /**
  * Linear decay through the spec points, clamped to [0, 1000]:
@@ -45,8 +47,9 @@ export function useGameplayLoop({
   const [isBlind, setIsBlind] = useState(true);
   const [wasJustRevealed, setWasJustRevealed] = useState(false);
   const [isPlayingMelody, setIsPlayingMelody] = useState(true);
-  const [previewSource, setPreviewSource] = useState<'itunes' | 'deezer' | 'synth' | null>(null);
+  const [previewSource, setPreviewSource] = useState<'itunes' | 'deezer' | 'zingmp3' | 'synth' | null>(null);
   const [audioElapsed, setAudioElapsed] = useState(0);
+  const [questionPhase, setQuestionPhase] = useState<QuestionPhase>('reading');
 
   const startTimeRef = useRef(Date.now());
   const questionStartRef = useRef(Date.now());
@@ -55,10 +58,14 @@ export function useGameplayLoop({
   const blindTimerRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const urgentTickRef = useRef<number | null>(null);
+  const transitionTimeoutRef = useRef<number | null>(null);
+  const revealAnimationTimeoutRef = useRef<number | null>(null);
+  const melodyRequestRef = useRef(0);
 
   const currentQuestion = questions[currentIndex];
-  const isCritical = elapsed >= 12;
-  const isWarning = elapsed >= 7 && elapsed < 12;
+  const remainingTime = Math.max(0, Math.min(QUESTION_TIME_LIMIT, QUESTION_TIME_LIMIT - elapsed));
+  const isCritical = remainingTime <= 5;
+  const isWarning = remainingTime <= 10 && remainingTime > 5;
 
   const isAnsweredRef = useRef(isAnswered);
   isAnsweredRef.current = isAnswered;
@@ -89,7 +96,7 @@ export function useGameplayLoop({
   const startRafScoreLoop = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     const tick = () => {
-      const t = (Date.now() - questionStartRef.current) / 1000;
+      const t = Math.min(QUESTION_TIME_LIMIT, Math.max(0, (Date.now() - questionStartRef.current) / 1000));
       setElapsed(t);
       setLiveScore(calcDecayingScore(t));
       setIsBlind(t < ANSWER_REVEAL_AT);
@@ -100,6 +107,7 @@ export function useGameplayLoop({
 
   const playCurrentMelody = useCallback(async () => {
     if (!currentQuestion) return;
+    const requestId = ++melodyRequestRef.current;
 
     soundEngine.resumeAudioContext();
     setIsPlayingMelody(true);
@@ -114,10 +122,11 @@ export function useGameplayLoop({
 
     const result = await audioPreview.playPreview(title, artist, 0, () => {
       setIsPlayingMelody(false);
-    }, PREVIEW_SECONDS);
+    }, PREVIEW_SECONDS, currentQuestion.zingId);
+    if (requestId !== melodyRequestRef.current) return;
 
     if (result === 'playing') {
-      const src = audioPreview.getSource() as 'itunes' | 'deezer' | null;
+      const src = audioPreview.getSource() as 'itunes' | 'deezer' | 'zingmp3' | null;
       setPreviewSource(src ?? 'itunes');
     } else {
       setPreviewSource('synth');
@@ -150,14 +159,19 @@ export function useGameplayLoop({
       if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
       if (blindTimerRef.current) clearTimeout(blindTimerRef.current);
       if (urgentTickRef.current) clearInterval(urgentTickRef.current);
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+      if (revealAnimationTimeoutRef.current) clearTimeout(revealAnimationTimeoutRef.current);
       stopRafScoreLoop();
       soundEngine.stopCurrentAudio();
       audioPreview.stop();
+      stopQuestionIntroAudio();
+      melodyRequestRef.current += 1;
       setIsPlayingMelody(false);
 
       setSelectedOption(optionIndex);
       setIsAnswered(true);
       setIsBlind(false);
+      setQuestionPhase('ready');
 
       const q = currentQuestionRef.current;
       const isCorrect = optionIndex === q?.correctIndex;
@@ -180,7 +194,7 @@ export function useGameplayLoop({
         setCurrentStreak(0);
       }
 
-      window.setTimeout(() => {
+      transitionTimeoutRef.current = window.setTimeout(() => {
         const qs = questionsRef.current;
         const ci = currentIndexRef.current;
         if (ci + 1 < qs.length) {
@@ -226,53 +240,75 @@ export function useGameplayLoop({
   useEffect(() => {
     if (!currentQuestion) return;
 
+    let cancelled = false;
+    const clearQuestionTimers = () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
+      if (blindTimerRef.current) clearTimeout(blindTimerRef.current);
+      if (urgentTickRef.current) clearInterval(urgentTickRef.current);
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+      stopRafScoreLoop();
+    };
+
+    clearQuestionTimers();
+    stopQuestionIntroAudio();
+    audioPreview.stop();
+    soundEngine.stopCurrentAudio();
     setTimeLeft(QUESTION_TIME_LIMIT);
     setElapsed(0);
     setLiveScore(SCORE_MAX);
     setSelectedOption(null);
     setIsAnswered(false);
     setIsBlind(true);
+    setQuestionPhase('reading');
     setWasJustRevealed(false);
-    questionStartRef.current = Date.now();
+    const startQuestion = async () => {
+      try {
+        await playQuestionIntroAudio(currentQuestion.promptType);
+      } catch (error) {
+        if (!cancelled) console.warn('[Question audio] Playback failed:', error);
+      }
+      if (cancelled) return;
 
-    playCurrentMelody();
+      setQuestionPhase('blind');
+      playCurrentMelody();
+      blindTimerRef.current = window.setTimeout(() => {
+        questionStartRef.current = Date.now();
+        setIsBlind(false);
+        setQuestionPhase('ready');
+        setWasJustRevealed(true);
+        soundEngine.playBlindReveal();
+        revealAnimationTimeoutRef.current = window.setTimeout(() => setWasJustRevealed(false), 500);
+        startRafScoreLoop();
+        timerRef.current = window.setInterval(() => {
+          setTimeLeft((prev) => {
+            if (prev <= 1) {
+              setElapsed(QUESTION_TIME_LIMIT);
+              setLiveScore(0);
+              handleAnswer(-1);
+              return 0;
+            }
+            if (prev > 5) soundEngine.playTick();
+            return prev - 1;
+          });
+        }, 1000);
+        urgentTickRef.current = window.setInterval(() => {
+          setTimeLeft((t) => {
+            if (t <= 5 && t > 0) soundEngine.playUrgentTick();
+            return t;
+          });
+        }, 500);
+      }, ANSWER_REVEAL_AT * 1000);
+    };
 
-    if (blindTimerRef.current) clearTimeout(blindTimerRef.current);
-    blindTimerRef.current = window.setTimeout(() => {
-      setIsBlind(false);
-      setWasJustRevealed(true);
-      soundEngine.playBlindReveal();
-      window.setTimeout(() => setWasJustRevealed(false), 500);
-    }, ANSWER_REVEAL_AT * 1000);
-
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = window.setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleAnswer(-1);
-          return 0;
-        }
-        if (prev > 5) soundEngine.playTick();
-        return prev - 1;
-      });
-    }, 1000);
-
-    if (urgentTickRef.current) clearInterval(urgentTickRef.current);
-    urgentTickRef.current = window.setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 5 && t > 0) soundEngine.playUrgentTick();
-        return t;
-      });
-    }, 500);
-
-    startRafScoreLoop();
+    startQuestion();
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
-      if (blindTimerRef.current) clearTimeout(blindTimerRef.current);
-      if (urgentTickRef.current) clearInterval(urgentTickRef.current);
-      stopRafScoreLoop();
+      cancelled = true;
+      clearQuestionTimers();
+      stopQuestionIntroAudio();
+      melodyRequestRef.current += 1;
+      audioPreview.stop();
       soundEngine.stopCurrentAudio();
     };
     // Restart only when the question index changes.
@@ -298,6 +334,8 @@ export function useGameplayLoop({
     audioElapsed,
     isCritical,
     isWarning,
+    remainingTime,
+    questionPhase,
     handleAnswer,
     playCurrentMelody,
     pauseMelody,

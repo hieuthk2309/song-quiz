@@ -8,7 +8,7 @@ type PreviewState = 'idle' | 'loading' | 'playing' | 'paused' | 'error' | 'fallb
 
 type PreviewResult = {
   success: boolean;
-  source?: 'deezer' | 'itunes';
+  source?: 'deezer' | 'itunes' | 'zingmp3';
   previewUrl?: string;
   trackName?: string;
   artistName?: string;
@@ -22,12 +22,12 @@ type StateChangeListener = (state: PreviewState, source?: string) => void;
 class AudioPreviewManager {
   private audio: HTMLAudioElement | null = null;
   private state: PreviewState = 'idle';
-  private source: 'deezer' | 'itunes' | null = null;
+  private source: 'deezer' | 'itunes' | 'zingmp3' | null = null;
   private listeners: StateChangeListener[] = [];
   private clipTimer: number | null = null;
   private timeUpdateHandler: (() => void) | null = null;
   // Simple in-memory cache: key = "title|artist" -> {url, source} or null
-  private cache: Map<string, { url: string; source: 'deezer' | 'itunes' } | null> = new Map();
+  private cache: Map<string, { url: string; source: 'deezer' | 'itunes' | 'zingmp3' } | null> = new Map();
 
   subscribe(cb: StateChangeListener) {
     this.listeners.push(cb);
@@ -37,7 +37,7 @@ class AudioPreviewManager {
     };
   }
 
-  private setState(s: PreviewState, src?: 'deezer' | 'itunes' | null) {
+  private setState(s: PreviewState, src?: 'deezer' | 'itunes' | 'zingmp3' | null) {
     this.state = s;
     if (src !== undefined) this.source = src ?? null;
     this.listeners.forEach((l) => l(s, this.source ?? undefined));
@@ -47,7 +47,7 @@ class AudioPreviewManager {
     return this.state;
   }
 
-  getSource(): 'deezer' | 'itunes' | null {
+  getSource(): 'deezer' | 'itunes' | 'zingmp3' | null {
     return this.source;
   }
 
@@ -91,6 +91,7 @@ class AudioPreviewManager {
     startAtMs: number = 0,
     onEnd?: () => void,
     clipSeconds: number = 15,
+    zingId?: string,
   ): Promise<'playing' | 'fallback'> {
     // Stop any existing audio first
     this.stop();
@@ -103,7 +104,7 @@ class AudioPreviewManager {
       // Not cached — fetch from Deezer preview endpoint
       try {
         const res = await fetch(
-          `/api/deezer/preview?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`,
+          `/api/deezer/preview?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}${zingId ? `&zingId=${encodeURIComponent(zingId)}` : ''}`,
         );
         if (res.ok) {
           const data: PreviewResult = await res.json();

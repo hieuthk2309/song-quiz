@@ -96,6 +96,7 @@ export interface QuizQuestion {
   explanation: string;
   deezerId?: number | string;
   deezerLink?: string;
+  zingId?: string;
   previewUrl?: string;
   // Audio notes for melodic synth synthesizer preview (frequencies in Hz or note names)
   melodyNotes?: Array<{ freq: number; duration: number }>;

@@ -162,7 +162,8 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
   }
 
   const progressPercent = ((currentIndex + 1) / questions.length) * 100;
-  const isRealPreview = previewSource === 'itunes' || previewSource === 'deezer';
+  const isRealPreview = previewSource === 'itunes' || previewSource === 'deezer' || previewSource === 'zingmp3';
+  const previewSourceName = previewSource === 'itunes' ? 'Apple Music' : previewSource === 'zingmp3' ? 'Zing MP3' : 'Deezer';
   const revealIn = Math.max(0, Math.ceil(ANSWER_REVEAL_AT - elapsed));
 
   return (
@@ -272,7 +273,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
           {isBlind
             ? `🙈 Nghe trước — đáp án hiện đúng giây thứ ${ANSWER_REVEAL_AT}!`
             : isRealPreview
-            ? `🎵 Đang phát bản xem trước ${PREVIEW_SECONDS}s từ ${previewSource === 'itunes' ? 'Apple Music' : 'Deezer'} — nghe và chọn đáp án!`
+            ? `🎵 Đang phát bản xem trước ${PREVIEW_SECONDS}s từ ${previewSourceName} — nghe và chọn đáp án!`
             : 'Chọn đáp án chính xác nhất dựa trên giai điệu và kiến thức V-pop của bạn'}
         </p>
       </div>
@@ -310,7 +311,7 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
                 )}
                 <span className="text-sm font-medium tracking-wide">
                   {isRealPreview
-                    ? `Đang phát từ ${previewSource === 'itunes' ? 'Apple Music' : 'Deezer'}...`
+                    ? `Đang phát từ ${previewSourceName}...`
                     : isPlayingMelody
                     ? 'Đang phát giai điệu...'
                     : 'Tạm dừng giai điệu'}
@@ -373,10 +374,12 @@ export const GameplayView: React.FC<GameplayViewProps> = ({ category, onFinishGa
                   className={`text-xs px-2 py-1 rounded-full font-medium ${
                     previewSource === 'itunes'
                       ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+                      : previewSource === 'zingmp3'
+                      ? 'bg-[#006b61] text-white'
                       : 'bg-[#ff0092] text-white'
                   }`}
                 >
-                  {previewSource === 'itunes' ? '🎵 Apple Music' : '🎵 Deezer'}
+                  {previewSource === 'itunes' ? '🎵 Apple Music' : previewSource === 'zingmp3' ? '🎵 Zing MP3' : '🎵 Deezer'}
                 </span>
               )}
               <button

@@ -47,7 +47,7 @@ export function useGameplayLoop({
   const [isBlind, setIsBlind] = useState(true);
   const [wasJustRevealed, setWasJustRevealed] = useState(false);
   const [isPlayingMelody, setIsPlayingMelody] = useState(true);
-  const [previewSource, setPreviewSource] = useState<'itunes' | 'deezer' | 'synth' | null>(null);
+  const [previewSource, setPreviewSource] = useState<'itunes' | 'deezer' | 'zingmp3' | 'synth' | null>(null);
   const [audioElapsed, setAudioElapsed] = useState(0);
   const [questionPhase, setQuestionPhase] = useState<QuestionPhase>('reading');
 
@@ -122,11 +122,11 @@ export function useGameplayLoop({
 
     const result = await audioPreview.playPreview(title, artist, 0, () => {
       setIsPlayingMelody(false);
-    }, PREVIEW_SECONDS);
+    }, PREVIEW_SECONDS, currentQuestion.zingId);
     if (requestId !== melodyRequestRef.current) return;
 
     if (result === 'playing') {
-      const src = audioPreview.getSource() as 'itunes' | 'deezer' | null;
+      const src = audioPreview.getSource() as 'itunes' | 'deezer' | 'zingmp3' | null;
       setPreviewSource(src ?? 'itunes');
     } else {
       setPreviewSource('synth');

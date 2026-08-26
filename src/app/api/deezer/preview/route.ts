@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchDeezerTracks } from '@/src/lib/deezerClient';
+import { zing } from 'zingmp3-api-next';
 
 /**
  * GET /api/deezer/preview?title=<song>&artist=<artist>
@@ -10,9 +11,22 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const title = searchParams.get('title') || '';
   const artist = searchParams.get('artist') || '';
+  const zingId = searchParams.get('zingId') || '';
 
   if (!title) {
     return NextResponse.json({ success: false, error: 'missing_title' }, { status: 400 });
+  }
+
+  if (zingId) {
+    try {
+      const result = (await zing.get_song(zingId)) as { err?: number; data?: { '128'?: string } };
+      const previewUrl = result.data?.['128'];
+      if (result.err === 0 && previewUrl) {
+        return NextResponse.json({ success: true, source: 'zingmp3', previewUrl, trackName: title, artistName: artist });
+      }
+    } catch (err) {
+      console.warn('[Zing MP3 Preview] Request failed:', err);
+    }
   }
 
   const cleanTitle = title.replace(/\s*[-–([].*/, '').trim();
